@@ -7,6 +7,7 @@ import { MS, AS, SP, FOP, FIP } from './shapes.jsx';
 import { PT, TD } from './content-types.js';
 import { Fld, TI, Sel, CForm } from './form-components.jsx';
 import { SecHdr, ShPick, ClrRow, DlModal } from './ui-components.jsx';
+import { loadCollection, addSavedQR, removeSavedQR } from './storage.js';
 
 function App(){
   const[themeMode,setThemeMode]=useState('auto');
@@ -36,6 +37,17 @@ function App(){
   const[qrData,setQrData]=useState(null);
   const[copied,setCopied]=useState(false);
   const[modal,setModal]=useState(null);
+  const[collection,setCollection]=useState(()=>loadCollection());
+  const[saveName,setSaveName]=useState('');
+  const[showSave,setShowSave]=useState(false);
+  const[showCollection,setShowCollection]=useState(false);
+  const collectionRef=useRef(null);
+  useEffect(()=>{
+    if(!showCollection)return;
+    const h=e=>{if(collectionRef.current&&!collectionRef.current.contains(e.target))setShowCollection(false);};
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[showCollection]);
   const logoRef=useRef(null);
   const canvasRef=useRef(null);
   const rootRef=useRef(null);
@@ -77,6 +89,39 @@ function App(){
   const upLogo=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const du=ev.target.result;const img=new Image();img.onload=()=>{setLogoImg(img);setLogoDU(du);const lm=minEc(logoR);const e2=ECR[ec]<ECR[lm]?lm:ec;try{setQrData(generateMatrix(input.trim(),e2));}catch{}};img.src=du;};r.readAsDataURL(f);e.target.value='';};
   const rmLogo=()=>{setLogoImg(null);setLogoDU(null);try{setQrData(generateMatrix(input.trim(),ec));}catch{}};
 
+  const saveCurrent=()=>{
+    if(!input.trim())return;
+    const name=saveName.trim()||`${cType.toUpperCase()} — ${input.slice(0,30)}`;
+    const updated=addSavedQR(collection,{name,cType,input,fgC,fgA,bgC,bgA,scale,mShape,aOuter,aInner,logoSh,logoR,logoBg,ec});
+    setCollection(updated);
+    setSaveName('');
+    setShowSave(false);
+  };
+
+  const loadSaved=entry=>{
+    setCType(entry.cType);
+    setInput(entry.input);
+    setFgC(entry.fgC);
+    setFgA(entry.fgA);
+    setBgC(entry.bgC);
+    setBgA(entry.bgA);
+    setScale(entry.scale);
+    setMShape(entry.mShape);
+    setAOuter(entry.aOuter);
+    setAInner(entry.aInner);
+    setLogoSh(entry.logoSh);
+    setLogoR(entry.logoR);
+    setLogoBg(entry.logoBg);
+    setEc(entry.ec);
+    setLogoImg(null);
+    setLogoDU(null);
+  };
+
+  const deleteSaved=id=>{
+    const updated=removeSavedQR(collection,id);
+    setCollection(updated);
+  };
+
   const totalPx=qrData?(qrData.size+8)*scale:null;
 
   const chkBg=`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='8' height='8' fill='${encodeURIComponent(T.chk1)}'/%3E%3Crect x='8' y='8' width='8' height='8' fill='${encodeURIComponent(T.chk1)}'/%3E%3Crect x='8' width='8' height='8' fill='${encodeURIComponent(T.chk2)}'/%3E%3Crect y='8' width='8' height='8' fill='${encodeURIComponent(T.chk2)}'/%3E%3C/svg%3E")`;
@@ -93,6 +138,32 @@ function App(){
       <div style={{borderBottom:`1px solid var(--brd)`,padding:'12px 24px',display:'flex',alignItems:'center',gap:10,flexShrink:0,background:'var(--surf)'}}>
         <span style={{color:'var(--acc)',display:'flex'}}><Ic.QR/></span>
         <span style={{fontSize:15,fontWeight:700,letterSpacing:'-0.3px',color:'var(--txt)'}}>QR Studio</span>
+        <div ref={collectionRef} style={{position:'relative',marginLeft:8}}>
+          <button onClick={()=>setShowCollection(x=>!x)} style={{display:'flex',alignItems:'center',justifyContent:'center',width:28,height:28,borderRadius:8,border:`1px solid ${showCollection?'var(--acc)':'var(--brd)'}`,cursor:'pointer',background:showCollection?'var(--accBg)':'var(--surf2)',color:showCollection?'var(--accTxt)':'var(--txtF)',transition:'all .15s',position:'relative'}} title="Saved QR codes">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            {collection.length>0&&<span style={{position:'absolute',top:-4,right:-4,width:14,height:14,background:'var(--acc)',color:'white',borderRadius:'50%',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,border:'2px solid var(--surf)'}}>{collection.length}</span>}
+          </button>
+          {showCollection&&<div style={{position:'absolute',top:'calc(100% + 8px)',left:0,width:300,background:'var(--surf)',border:`1px solid var(--brd2)`,borderRadius:12,boxShadow:'0 12px 40px rgba(0,0,0,0.25)',zIndex:100,overflow:'hidden'}}>
+            <div style={{padding:'12px 14px',borderBottom:`1px solid var(--brd)`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontSize:13,fontWeight:600,color:'var(--txt)'}}>Saved QR codes</span>
+              <span style={{fontSize:11,color:'var(--txtD)'}}>{collection.length}</span>
+            </div>
+            <div style={{maxHeight:400,overflowY:'auto',padding:'8px'}}>
+              {collection.length===0?<div style={{padding:'24px 16px',textAlign:'center',color:'var(--txtD)',fontSize:12}}>No saved codes yet</div>:collection.map(item=>(
+                <div key={item.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:8,cursor:'pointer',transition:'background .1s'}} onMouseEnter={e=>e.currentTarget.style.background='var(--surf2)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <div style={{width:36,height:36,borderRadius:6,background:'var(--accBg)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accDim)" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  </div>
+                  <div style={{flex:1,minWidth:0,cursor:'pointer'}} onClick={()=>{loadSaved(item);setShowCollection(false);}}>
+                    <div style={{fontSize:12.5,fontWeight:500,color:'var(--txt)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
+                    <div style={{fontSize:10.5,color:'var(--txtD)',marginTop:1}}>{item.cType} · EC {item.ec}</div>
+                  </div>
+                  <button onClick={e=>{e.stopPropagation();deleteSaved(item.id);}} style={{background:'none',border:'none',color:'var(--txtD)',cursor:'pointer',padding:'4px',display:'flex',borderRadius:4,transition:'color .1s'}} onMouseEnter={e=>e.currentTarget.style.color='var(--dan)'} onMouseLeave={e=>e.currentTarget.style.color='var(--txtD)'}><Ic.Trash/></button>
+                </div>
+              ))}
+            </div>
+          </div>}
+        </div>
         <span style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:3,background:'var(--surf2)',border:`1px solid var(--brd)`,borderRadius:20,padding:'3px 4px'}}>
           {thBtns.map(({id,I})=><button key={id} onClick={()=>setThemeMode(id)} title={id} style={{display:'flex',alignItems:'center',justifyContent:'center',width:26,height:26,borderRadius:16,border:'none',cursor:'pointer',background:themeMode===id?'var(--acc)':'transparent',color:themeMode===id?'white':'var(--txtF)',transition:'all .15s'}}><I/></button>)}
         </span>
@@ -203,10 +274,16 @@ function App(){
           </div>
           {qrData&&<div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'center'}}>{[['Version',`V${Math.round((qrData.size-17)/4)}`],['Modules',`${qrData.size}×${qrData.size}`],['EC',effEc],['Image',`${totalPx}×${totalPx}px`]].map(([k,v])=><div key={k} style={{background:'var(--surf)',border:`1px solid var(--brd)`,borderRadius:20,padding:'3px 10px',display:'flex',gap:5,alignItems:'center'}}><span style={{fontSize:10,color:'var(--txtD)',fontWeight:600}}>{k}</span><span style={{fontSize:10.5,color:'var(--txtM)',fontFamily:'monospace'}}>{v}</span></div>)}</div>}
           <div style={{display:'flex',gap:8}}>
+            <button className="eb" onClick={()=>setShowSave(x=>!x)} disabled={!qrData} style={{display:'flex',alignItems:'center',gap:7,padding:'9px 20px',fontSize:12.5,fontWeight:600,background:qrData?'var(--surf)':'var(--surf2)',color:qrData?'var(--txt)':'var(--txtD)',border:`1.5px solid ${qrData?'var(--brd2)':'var(--brd)'}`,borderRadius:8,cursor:qrData?'pointer':'default'}}><Ic.Sh/> Save</button>
             <button className="eb" onClick={dlPng} disabled={!qrData} style={{display:'flex',alignItems:'center',gap:7,padding:'9px 20px',fontSize:12.5,fontWeight:600,background:qrData?'var(--acc)':'var(--surf2)',color:qrData?'white':'var(--txtD)',border:'none',borderRadius:8,cursor:qrData?'pointer':'default'}}><Ic.Dl/> PNG</button>
             <button className="eb" onClick={dlSvg} disabled={!qrData} style={{display:'flex',alignItems:'center',gap:7,padding:'9px 20px',fontSize:12.5,fontWeight:600,background:'var(--surf)',color:qrData?'var(--txt)':'var(--txtD)',border:`1.5px solid ${qrData?'var(--brd2)':'var(--brd)'}`,borderRadius:8,cursor:qrData?'pointer':'default'}}><Ic.Dl/> SVG</button>
             <button className="eb" onClick={copyImg} disabled={!qrData} style={{display:'flex',alignItems:'center',gap:7,padding:'9px 20px',fontSize:12.5,fontWeight:600,background:copied?'var(--okBg)':'var(--surf)',color:copied?'var(--ok)':qrData?'var(--txt)':'var(--txtD)',border:`1.5px solid ${copied?'var(--okBdr)':qrData?'var(--brd2)':'var(--brd)'}`,borderRadius:8,cursor:qrData?'pointer':'default',transition:'all .2s'}}>{copied?<><Ic.Ok/> Copied!</>:<><Ic.Cp/> Copy</>}</button>
           </div>
+          {showSave&&<div style={{display:'flex',gap:8,alignItems:'center',width:'100%',maxWidth:400}}>
+            <input type="text" value={saveName} onChange={e=>setSaveName(e.target.value)} placeholder="Name (optional)" style={{flex:1,background:'var(--inp)',border:'1.5px solid var(--brd)',borderRadius:8,padding:'8px 11px',fontSize:12.5,color:'var(--txt)',outline:'none',fontFamily:'inherit'}} onFocus={e=>e.target.style.borderColor='var(--acc)'} onBlur={e=>e.target.style.borderColor='var(--brd)'}/>
+            <button onClick={saveCurrent} style={{padding:'9px 16px',fontSize:12.5,fontWeight:600,background:'var(--acc)',color:'white',border:'none',borderRadius:8,cursor:'pointer'}}>Save</button>
+            <button onClick={()=>{setShowSave(false);setSaveName('');}} style={{padding:'9px 16px',fontSize:12.5,fontWeight:600,background:'var(--surf)',color:'var(--txt)',border:`1.5px solid var(--brd2)`,borderRadius:8,cursor:'pointer'}}>Cancel</button>
+          </div>}
           <p style={{fontSize:11,color:'var(--txtD)',margin:0,textAlign:'center'}}>PNG exports at 2× resolution.</p>
         </div>
       </div>
