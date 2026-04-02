@@ -58,3 +58,19 @@ export function generateMatrix(text,ecLevel='L'){
   const matrix=Array.from({length:size},(_,r)=>Array.from({length:size},(__,c)=>({dark:qr.isDark(r,c)?1:0,finder:fC.has(`${r},${c}`)})));
   return{matrix,size};
 }
+
+export function getVersionForEC(text,ecLevel){
+  try{const qr=qrcodeGenerator(0,ecLevel);qr.addData(text);qr.make();return Math.floor((qr.getModuleCount()-17)/4);}
+  catch{return 99;}
+}
+
+export function getBestEC(text,baseEc){
+  const levels=['L','M','Q','H'];
+  const baseIdx=levels.indexOf(baseEc);
+  const baseVer=getVersionForEC(text,baseEc);
+  if(baseVer>=99)return baseEc;
+  for(let i=3;i>baseIdx;i--){
+    if(getVersionForEC(text,levels[i])===baseVer)return levels[i];
+  }
+  return baseEc;
+}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { generateMatrix } from './qr.js';
+import { generateMatrix, getBestEC } from './qr.js';
 import { renderQR, getPngUrl, getSvgUrls } from './render.js';
 import { TH } from './themes.js';
 import { Ic } from './icons.jsx';
@@ -34,6 +34,8 @@ function App(){
   const[logoR,setLogoR]=useState(0.22);
   const[logoBg,setLogoBg]=useState('#ffffff');
   const[ec,setEc]=useState('L');
+  const[ecManual,setEcManual]=useState(false);
+  const[actualEc,setActualEc]=useState('L');
   const[showAdv,setShowAdv]=useState(false);
   const[err,setErr]=useState(null);
   const[qrData,setQrData]=useState(null);
@@ -44,15 +46,15 @@ function App(){
   const[showSave,setShowSave]=useState(false);
   const[showCollection,setShowCollection]=useState(false);
   const collectionRef=useRef(null);
+  const logoRef=useRef(null);
+  const canvasRef=useRef(null);
+  const rootRef=useRef(null);
   useEffect(()=>{
     if(!showCollection)return;
     const h=e=>{if(collectionRef.current&&!collectionRef.current.contains(e.target))setShowCollection(false);};
     document.addEventListener('mousedown',h);
     return()=>document.removeEventListener('mousedown',h);
   },[showCollection]);
-  const logoRef=useRef(null);
-  const canvasRef=useRef(null);
-  const rootRef=useRef(null);
   useEffect(()=>{
     const el=rootRef.current;
     if(!el)return;
@@ -66,19 +68,18 @@ function App(){
       '--inp':T.inp,
     }).forEach(([k,v])=>el.style.setProperty(k,v));
   },[T]);
-
   const ECR={L:0,M:1,Q:2,H:3};
   const ECRV={L:0.07,M:0.15,Q:0.25,H:0.30};
   const minEc=r=>{const a=r*r;if(a<=ECRV.L)return'L';if(a<=ECRV.M)return'M';if(a<=ECRV.Q)return'Q';return'H';};
   const logoMin=logoImg?minEc(logoR):null;
-  const effEc=logoMin&&ECR[ec]<ECR[logoMin]?logoMin:ec;
-
+  const effEc=actualEc;
   const gen=useCallback(()=>{
     if(!input.trim()){setQrData(null);setErr(null);return;}
-    const lm=logoImg?minEc(logoR):null;const e=lm&&ECR[ec]<ECR[lm]?lm:ec;
-    try{setQrData(generateMatrix(input.trim(),e));setErr(null);}
+    const lm=logoImg?minEc(logoR):null;const base=lm&&ECR[ec]<ECR[lm]?lm:ec;
+    const best=ecManual?base:getBestEC(input.trim(),base);
+    try{setQrData(generateMatrix(input.trim(),best));setErr(null);setActualEc(best);}
     catch{setErr('Could not encode — try shorter text.');setQrData(null);}
-  },[input,logoImg,ec,logoR]);
+  },[input,logoImg,ec,logoR,ecManual]);
   useEffect(()=>gen(),[gen]);
 
   const opts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale,moduleShape:mShape,moduleGap:mGap,anchorOuterShape:aOuter,anchorInnerShape:aInner,logoImg,logoDataUrl:logoDU,logoSvgContent:logoSvgContent,logoShape:logoSh,logoRatio:logoR,logoBg};
@@ -277,9 +278,10 @@ function App(){
               <div>
                 <div style={{fontSize:11,color:'var(--txtM)',fontWeight:500,marginBottom:8}}>Error correction level</div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:5}}>
-                  {[{id:'L',p:'7%'},{id:'M',p:'15%'},{id:'Q',p:'25%'},{id:'H',p:'30%'}].map(({id,p})=>{const a=ec===id,blk=logoMin&&ECR[id]<ECR[logoMin];return<button key={id} onClick={()=>setEc(id)} title={`${p} recovery`} style={{padding:'8px 4px',display:'flex',flexDirection:'column',alignItems:'center',gap:3,background:a?'var(--accBg)':'var(--surf2)',color:a?'var(--accTxt)':'var(--txtF)',border:`1.5px solid ${a?'var(--acc)':'var(--brd)'}`,borderRadius:8,cursor:'pointer',transition:'all .15s',boxShadow:a?'0 0 0 2px rgba(59,130,246,0.2)':'none',opacity:blk?0.4:1}}><span style={{fontSize:14,fontWeight:700,fontFamily:'monospace'}}>{id}</span><span style={{fontSize:9,opacity:.7}}>{p}</span></button>;})}
+                  {[{id:'L',p:'7%'},{id:'M',p:'15%'},{id:'Q',p:'25%'},{id:'H',p:'30%'}].map(({id,p})=>{const a=ec===id,blk=logoMin&&ECR[id]<ECR[logoMin];return<button key={id} onClick={()=>{setEc(id);setEcManual(true);}} title={`${p} recovery`} style={{padding:'8px 4px',display:'flex',flexDirection:'column',alignItems:'center',gap:3,background:a?'var(--accBg)':'var(--surf2)',color:a?'var(--accTxt)':'var(--txtF)',border:`1.5px solid ${a?'var(--acc)':'var(--brd)'}`,borderRadius:8,cursor:'pointer',transition:'all .15s',boxShadow:a?'0 0 0 2px rgba(59,130,246,0.2)':'none',opacity:blk?0.4:1}}><span style={{fontSize:14,fontWeight:700,fontFamily:'monospace'}}>{id}</span><span style={{fontSize:9,opacity:.7}}>{p}</span></button>;})}
                 </div>
                 {logoImg&&logoMin&&ECR[ec]<ECR[logoMin]&&<p style={{margin:'6px 0 0',fontSize:10.5,color:'var(--warn)',lineHeight:1.4}}>Bumped to <strong>{logoMin}</strong> — logo covers ~{Math.round(logoR*logoR*100)}% of area, needs {Math.round(ECRV[logoMin]*100)}% recovery.</p>}
+                {!ecManual&&actualEc!==ec&&<p style={{margin:'6px 0 0',fontSize:10.5,color:'var(--accDim)',lineHeight:1.4}}>Auto-bumped to <strong>{actualEc}</strong> — fits in same version. Click a level above to override.</p>}
                 <p style={{margin:'8px 0 0',fontSize:10.5,color:'var(--txtD)',lineHeight:1.5}}>Higher levels add redundancy but produce a denser code.</p>
               </div>
               {qrData&&<div style={{...s1}}><span style={{fontSize:11,color:'var(--txtD)'}}>Active:</span><span style={{fontFamily:'monospace',fontSize:12,fontWeight:700,color:'var(--accTxt)'}}>{effEc}</span><span style={{fontSize:11,color:'var(--txtD)'}}>·</span><span style={{fontSize:11,color:'var(--txtD)'}}>V{Math.round((qrData.size-17)/4)}</span><span style={{fontSize:11,color:'var(--txtD)'}}>·</span><span style={{fontSize:11,color:'var(--txtD)'}}>{qrData.size}×{qrData.size}</span></div>}
