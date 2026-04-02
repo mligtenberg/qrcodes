@@ -93,7 +93,11 @@ function App(){
   const saveCurrent=()=>{
     if(!input.trim())return;
     const name=saveName.trim()||`${cType.toUpperCase()} — ${input.slice(0,30)}`;
-    const updated=addSavedQR(collection,{name,cType,input,fgC,fgA,bgC,bgA,scale,mShape,mGap,aOuter,aInner,logoSh,logoR,logoBg,ec});
+    const c=document.createElement('canvas');
+    const sOpts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale:3,moduleShape:mShape,moduleGap:mGap,anchorOuterShape:aOuter,anchorInnerShape:aInner,logoImg:null,logoDataUrl:null,logoShape:logoSh,logoRatio:logoR,logoBg};
+    renderQR(c,qrData,sOpts);
+    const preview=c.toDataURL('image/png');
+    const updated=addSavedQR(collection,{name,cType,input,fgC,fgA,bgC,bgA,scale,mShape,mGap,aOuter,aInner,logoSh,logoR,logoBg,ec,preview});
     setCollection(updated);
     setSaveName('');
     setShowSave(false);
@@ -108,7 +112,7 @@ function App(){
     setBgA(entry.bgA);
     setScale(entry.scale);
     setMShape(entry.mShape);
-    setMGap(entry.mGap||10);
+    setMGap(entry.mGap||0);
     setAOuter(entry.aOuter);
     setAInner(entry.aInner);
     setLogoSh(entry.logoSh);
@@ -153,9 +157,7 @@ function App(){
             <div style={{maxHeight:400,overflowY:'auto',padding:'8px'}}>
               {collection.length===0?<div style={{padding:'24px 16px',textAlign:'center',color:'var(--txtD)',fontSize:12}}>No saved codes yet</div>:collection.map(item=>(
                 <div key={item.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:8,cursor:'pointer',transition:'background .1s'}} onMouseEnter={e=>e.currentTarget.style.background='var(--surf2)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <div style={{width:36,height:36,borderRadius:6,background:'var(--accBg)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accDim)" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                  </div>
+                  {item.preview?<img src={item.preview} alt="" style={{width:36,height:36,borderRadius:6,flexShrink:0,objectFit:'contain',background:'var(--bg)'}}/>:<div style={{width:36,height:36,borderRadius:6,background:'var(--accBg)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accDim)" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>}
                   <div style={{flex:1,minWidth:0,cursor:'pointer'}} onClick={()=>{loadSaved(item);setShowCollection(false);}}>
                     <div style={{fontSize:12.5,fontWeight:500,color:'var(--txt)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
                     <div style={{fontSize:10.5,color:'var(--txtD)',marginTop:1}}>{item.cType} · EC {item.ec}</div>
