@@ -65,14 +65,25 @@ export function renderQR(canvas,{matrix,size},opts){
     if(matrix[r][c].dark){fg.fillStyle=fgColor;if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dModC(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,n);}else dMod(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape);}
   }
   fO.forEach(({r,c})=>dFinder(fg,(c+quiet)*scale,(r+quiet)*scale,scale,anchorOuterShape,anchorInnerShape,fgColor));
+  if(opts.logoImg&&(!opts.logoBg||opts.logoBg==='transparent')){
+    const ls=Math.round(total*(opts.logoRatio||0.22));
+    const lx=Math.round((total-ls)/2),ly=Math.round((total-ls)/2),pad=Math.round(ls*0.12);
+    fg.globalCompositeOperation='destination-out';fg.fillStyle='rgba(0,0,0,1)';
+    if(opts.logoShape==='circle'){fg.beginPath();fg.arc(lx+ls/2,ly+ls/2,ls/2+pad,0,Math.PI*2);fg.fill();}
+    else if(opts.logoShape==='rounded'){dRR(fg,lx-pad,ly-pad,ls+pad*2,ls+pad*2,(ls+pad*2)*0.2);fg.fill();}
+    else fg.fillRect(lx-pad,ly-pad,ls+pad*2,ls+pad*2);
+    fg.globalCompositeOperation='source-over';
+  }
   ctx.globalAlpha=fgAlpha;ctx.drawImage(fgC,0,0);ctx.globalAlpha=1;
   if(opts.logoImg){
     const ls=Math.round(total*(opts.logoRatio||0.22));
     const lx=Math.round((total-ls)/2),ly=Math.round((total-ls)/2),pad=Math.round(ls*0.12);
-    ctx.fillStyle=opts.logoBg||'#ffffff';
-    if(opts.logoShape==='circle'){ctx.save();ctx.beginPath();ctx.arc(lx+ls/2,ly+ls/2,ls/2+pad,0,Math.PI*2);ctx.fill();}
-    else if(opts.logoShape==='rounded'){dRR(ctx,lx-pad,ly-pad,ls+pad*2,ls+pad*2,(ls+pad*2)*0.2);ctx.fill();}
-    else ctx.fillRect(lx-pad,ly-pad,ls+pad*2,ls+pad*2);
+    if(opts.logoBg&&opts.logoBg!=='transparent'){
+      ctx.fillStyle=opts.logoBg;
+      if(opts.logoShape==='circle'){ctx.save();ctx.beginPath();ctx.arc(lx+ls/2,ly+ls/2,ls/2+pad,0,Math.PI*2);ctx.fill();}
+      else if(opts.logoShape==='rounded'){dRR(ctx,lx-pad,ly-pad,ls+pad*2,ls+pad*2,(ls+pad*2)*0.2);ctx.fill();}
+      else ctx.fillRect(lx-pad,ly-pad,ls+pad*2,ls+pad*2);
+    }
     if(opts.logoShape==='circle'){ctx.save();ctx.beginPath();ctx.arc(lx+ls/2,ly+ls/2,ls/2,0,Math.PI*2);ctx.clip();ctx.drawImage(opts.logoImg,lx,ly,ls,ls);ctx.restore();}
     else if(opts.logoShape==='rounded'){ctx.save();dRR(ctx,lx,ly,ls,ls,ls*0.18);ctx.clip();ctx.drawImage(opts.logoImg,lx,ly,ls,ls);ctx.restore();}
     else ctx.drawImage(opts.logoImg,lx,ly,ls,ls);
@@ -123,11 +134,30 @@ export function genSVG({matrix,size},opts){
   const fO=[{r:0,c:0},{r:0,c:size-7},{r:size-7,c:0}];
   const fS=new Set();fO.forEach(({r,c})=>{for(let dr=0;dr<7;dr++)for(let dc=0;dc<7;dc++)fS.add(`${r+dr},${c+dc}`);});
   const CON=new Set(['connected-h','connected-v','fluid']);
-  let dm='';for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(fS.has(`${r},${c}`))continue;if(matrix[r][c].dark){if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n);}else dm+=svgMod(c+q,r+q,s,moduleShape);}}
+  const logoTransparent=opts.logoImg&&(!opts.logoBg||opts.logoBg==='transparent');
+  const ls=()=>t*(opts.logoRatio||0.22);
+  let logoClipR=0,logoCx=0,logoCy=0;
+  if(logoTransparent){
+    const ls2=ls();
+    logoCx=t/2;logoCy=t/2;
+    logoClipR=ls2/2+ls2*0.12;
+  }
+  const inLogoArea=(r,c)=>{
+    if(!logoTransparent)return false;
+    const ls2=ls(),pad=ls2*0.12;
+    const lx=logoCx-ls2/2,ly=logoCy-ls2/2;
+    const px=c+q,py=r+q;
+    if(opts.logoShape==='circle'){
+      const dx=px-logoCx,dy=py-logoCy;
+      return dx*dx+dy*dy<logoClipR*logoClipR;
+    }
+    return px>=lx-pad&&px<=lx+ls2+pad&&py>=ly-pad&&py<=ly+ls2+pad;
+  };
+  let dm='';for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(fS.has(`${r},${c}`))continue;if(inLogoArea(r,c))continue;if(matrix[r][c].dark){if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n);}else dm+=svgMod(c+q,r+q,s,moduleShape);}}
   let fe='';fO.forEach(({r,c},i)=>{fe+=svgFinder(c+q,r+q,s,anchorOuterShape,anchorInnerShape);});
   const bgR=bgAlpha>0?`<rect width="${t}" height="${t}" fill="${fmtC(bgColor,bgAlpha)}"/>`:'';
   let lE='';
-  if(opts.logoImg&&opts.logoDataUrl){const ls=t*(opts.logoRatio||0.22),lx=(t-ls)/2,ly=(t-ls)/2,pad=ls*0.12,bg=opts.logoBg||'#ffffff';if(opts.logoShape==='circle'){lE=`<circle cx="${lx+ls/2}" cy="${ly+ls/2}" r="${ls/2+pad}" fill="${bg}"/><clipPath id="lc"><circle cx="${lx+ls/2}" cy="${ly+ls/2}" r="${ls/2}"/></clipPath><image href="${opts.logoDataUrl}" x="${lx}" y="${ly}" width="${ls}" height="${ls}" clip-path="url(#lc)" preserveAspectRatio="xMidYMid slice"/>`;}else if(opts.logoShape==='rounded'){const rp=(ls+pad*2)*0.2,ri=ls*0.18;lE=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls+pad*2}" height="${ls+pad*2}" rx="${rp}" fill="${bg}"/><clipPath id="lc"><rect x="${lx}" y="${ly}" width="${ls}" height="${ls}" rx="${ri}"/></clipPath><image href="${opts.logoDataUrl}" x="${lx}" y="${ly}" width="${ls}" height="${ls}" clip-path="url(#lc)" preserveAspectRatio="xMidYMid slice"/>`;}else{lE=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls+pad*2}" height="${ls+pad*2}" fill="${bg}"/><image href="${opts.logoDataUrl}" x="${lx}" y="${ly}" width="${ls}" height="${ls}" preserveAspectRatio="xMidYMid slice"/>`;}}
+  if(opts.logoImg&&opts.logoDataUrl){const ls2=t*(opts.logoRatio||0.22),lx=(t-ls2)/2,ly=(t-ls2)/2,pad=ls2*0.12,bg=opts.logoBg||'#ffffff';if(opts.logoShape==='circle'){lE=`<circle cx="${lx+ls2/2}" cy="${ly+ls2/2}" r="${ls2/2+pad}" fill="${bg}"/><clipPath id="lc"><circle cx="${lx+ls2/2}" cy="${ly+ls2/2}" r="${ls2/2}"/></clipPath><image href="${opts.logoDataUrl}" x="${lx}" y="${ly}" width="${ls2}" height="${ls2}" clip-path="url(#lc)" preserveAspectRatio="xMidYMid slice"/>`;}else if(opts.logoShape==='rounded'){const rp=(ls2+pad*2)*0.2,ri=ls2*0.18;lE=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls2+pad*2}" height="${ls2+pad*2}" rx="${rp}" fill="${bg}"/><clipPath id="lc"><rect x="${lx}" y="${ly}" width="${ls2}" height="${ls2}" rx="${ri}"/></clipPath><image href="${opts.logoDataUrl}" x="${lx}" y="${ly}" width="${ls2}" height="${ls2}" clip-path="url(#lc)" preserveAspectRatio="xMidYMid slice"/>`;}else{lE=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls2+pad*2}" height="${ls2+pad*2}" fill="${bg}"/><image href="${opts.logoDataUrl}" x="${lx}" y="${ly}" width="${ls2}" height="${ls2}" preserveAspectRatio="xMidYMid slice"/>`;}}
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${t} ${t}" shape-rendering="crispEdges">${bgR}<g fill="${fg}">${dm}${fe}</g>${lE}</svg>`;
 }
 
