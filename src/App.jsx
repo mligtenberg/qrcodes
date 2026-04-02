@@ -282,6 +282,7 @@ function App(){
                 </div>
                 {logoImg&&logoMin&&ECR[ec]<ECR[logoMin]&&<p style={{margin:'6px 0 0',fontSize:10.5,color:'var(--warn)',lineHeight:1.4}}>Bumped to <strong>{logoMin}</strong> — logo covers ~{Math.round(logoR*logoR*100)}% of area, needs {Math.round(ECRV[logoMin]*100)}% recovery.</p>}
                 {!ecManual&&actualEc!==ec&&<p style={{margin:'6px 0 0',fontSize:10.5,color:'var(--accDim)',lineHeight:1.4}}>Auto-bumped to <strong>{actualEc}</strong> — fits in same version. Click a level above to override.</p>}
+                {ecManual&&<button onClick={()=>{setEc('L');setEcManual(false);}} style={{marginTop:8,fontSize:10.5,color:'var(--accDim)',background:'var(--accBg)',border:`1px solid var(--acc)`,borderRadius:6,padding:'4px 10px',cursor:'pointer',transition:'all .15s'}}>Reset to auto-select</button>}
                 <p style={{margin:'8px 0 0',fontSize:10.5,color:'var(--txtD)',lineHeight:1.5}}>Higher levels add redundancy but produce a denser code.</p>
               </div>
               {qrData&&<div style={{...s1}}><span style={{fontSize:11,color:'var(--txtD)'}}>Active:</span><span style={{fontFamily:'monospace',fontSize:12,fontWeight:700,color:'var(--accTxt)'}}>{effEc}</span><span style={{fontSize:11,color:'var(--txtD)'}}>·</span><span style={{fontSize:11,color:'var(--txtD)'}}>V{Math.round((qrData.size-17)/4)}</span><span style={{fontSize:11,color:'var(--txtD)'}}>·</span><span style={{fontSize:11,color:'var(--txtD)'}}>{qrData.size}×{qrData.size}</span></div>}
