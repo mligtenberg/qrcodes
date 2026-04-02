@@ -4,13 +4,13 @@ export function dRR(ctx,x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.mov
 
 export function dRC(ctx,x,y,w,h,r,{tl=true,tr=true,br=true,bl=true}){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+(tl?r:0),y);ctx.lineTo(x+w-(tr?r:0),y);if(tr)ctx.arcTo(x+w,y,x+w,y+r,r);else ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h-(br?r:0));if(br)ctx.arcTo(x+w,y+h,x+w-r,y+h,r);else ctx.lineTo(x+w,y+h);ctx.lineTo(x+(bl?r:0),y+h);if(bl)ctx.arcTo(x,y+h,x,y+h-r,r);else ctx.lineTo(x,y+h);ctx.lineTo(x,y+(tl?r:0));if(tl)ctx.arcTo(x,y,x+r,y,r);else ctx.lineTo(x,y);ctx.closePath();}
 
-export function dMod(ctx,x,y,s,shape){
-  const gap=shape==='circle'?s*0.1:shape==='rounded'?s*0.07:0;
+export function dMod(ctx,x,y,s,shape,gapPct){
+  const gap=s*((gapPct||0)/100);
   const xg=x+gap,yg=y+gap,wg=s-gap*2;
   if(shape==='circle'){ctx.beginPath();ctx.arc(xg+wg/2,yg+wg/2,wg/2,0,Math.PI*2);ctx.fill();}
   else if(shape==='rounded'){dRR(ctx,xg,yg,wg,wg,wg*0.3);ctx.fill();}
-  else if(shape==='diamond'){const cx=x+s/2,cy=y+s/2,r=s*0.48;ctx.beginPath();ctx.moveTo(cx,cy-r);ctx.lineTo(cx+r,cy);ctx.lineTo(cx,cy+r);ctx.lineTo(cx-r,cy);ctx.closePath();ctx.fill();}
-  else ctx.fillRect(x,y,s,s);
+  else if(shape==='diamond'){const cx=x+s/2,cy=y+s/2,r=Math.max(0,wg*0.48);ctx.beginPath();ctx.moveTo(cx,cy-r);ctx.lineTo(cx+r,cy);ctx.lineTo(cx,cy+r);ctx.lineTo(cx-r,cy);ctx.closePath();ctx.fill();}
+  else if(wg>0)ctx.fillRect(xg,yg,wg,wg);
 }
 
 export function dModC(ctx,x,y,s,shape,n){
@@ -48,7 +48,7 @@ export function dFinder(fg,ox,oy,s,oShape,iShape,fgColor){
 }
 
 export function renderQR(canvas,{matrix,size},opts){
-  const{fgColor,fgAlpha,bgColor,bgAlpha,scale,moduleShape,anchorOuterShape,anchorInnerShape}=opts;
+  const{fgColor,fgAlpha,bgColor,bgAlpha,scale,moduleShape,moduleGap,anchorOuterShape,anchorInnerShape}=opts;
   const quiet=4,total=(size+quiet*2)*scale;
   canvas.width=total;canvas.height=total;
   const ctx=canvas.getContext('2d');
@@ -62,7 +62,7 @@ export function renderQR(canvas,{matrix,size},opts){
   fg.fillStyle=fgColor;
   for(let r=0;r<size;r++)for(let c=0;c<size;c++){
     if(fS.has(`${r},${c}`))continue;
-    if(matrix[r][c].dark){fg.fillStyle=fgColor;if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dModC(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,n);}else dMod(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape);}
+    if(matrix[r][c].dark){fg.fillStyle=fgColor;if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dModC(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,n);}else dMod(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,moduleGap);}
   }
   fO.forEach(({r,c})=>dFinder(fg,(c+quiet)*scale,(r+quiet)*scale,scale,anchorOuterShape,anchorInnerShape,fgColor));
   if(opts.logoImg&&(!opts.logoBg||opts.logoBg==='transparent')){
@@ -92,13 +92,14 @@ export function renderQR(canvas,{matrix,size},opts){
 
 export function fmtC(hex,a){if(a<=0)return'none';const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);if(a>=1)return `rgb(${r},${g},${b})`;return `rgba(${r},${g},${b},${a.toFixed(3)})`;}
 export function svgRR(x,y,w,h,r){r=Math.min(r,w/2,h/2);return `M${x+r},${y}L${x+w-r},${y}Q${x+w},${y} ${x+w},${y+r}L${x+w},${y+h-r}Q${x+w},${y+h} ${x+w-r},${y+h}L${x+r},${y+h}Q${x},${y+h} ${x},${y+h-r}L${x},${y+r}Q${x},${y} ${x+r},${y}Z`;}
-export function svgMod(x,y,s,shape){
-  const gap=shape==='circle'?s*0.1:shape==='rounded'?s*0.07:0;
+export function svgMod(x,y,s,shape,gapPct){
+  const gp=gapPct||0;
+  const gap=s*(gp>0?gp/100:shape==='circle'?0.1:shape==='rounded'?0.07:shape==='diamond'?0.04:0);
   const xg=x+gap,yg=y+gap,wg=s-gap*2;
   if(shape==='circle')return `<circle cx="${xg+wg/2}" cy="${yg+wg/2}" r="${wg/2}"/>`;
   if(shape==='rounded')return `<path d="${svgRR(xg,yg,wg,wg,wg*0.3)}"/>`;
-  if(shape==='diamond'){const cx=x+s/2,cy=y+s/2,r=s*0.48;return `<polygon points="${cx},${cy-r} ${cx+r},${cy} ${cx},${cy+r} ${cx-r},${cy}"/>`;}
-  return `<rect x="${x}" y="${y}" width="${s}" height="${s}"/>`;
+  if(shape==='diamond'){const cx=x+s/2,cy=y+s/2,r=Math.max(0,wg*0.48);return `<polygon points="${cx},${cy-r} ${cx+r},${cy} ${cx},${cy+r} ${cx-r},${cy}"/>`;}
+  return wg>0?`<rect x="${xg}" y="${yg}" width="${wg}" height="${wg}"/>`:'';
 }
 export function svgModC(x,y,s,shape,n){
   const r=s*0.38;
@@ -129,7 +130,7 @@ export function svgFinder(ox,oy,s,oS,iS){
   return ring+inner;
 }
 export function genSVG({matrix,size},opts){
-  const{fgColor,fgAlpha,bgColor,bgAlpha,moduleShape,anchorOuterShape,anchorInnerShape}=opts;
+  const{fgColor,fgAlpha,bgColor,bgAlpha,moduleShape,moduleGap,anchorOuterShape,anchorInnerShape}=opts;
   const q=4,t=size+q*2,s=1,fg=fmtC(fgColor,fgAlpha);
   const fO=[{r:0,c:0},{r:0,c:size-7},{r:size-7,c:0}];
   const fS=new Set();fO.forEach(({r,c})=>{for(let dr=0;dr<7;dr++)for(let dc=0;dc<7;dc++)fS.add(`${r+dr},${c+dc}`);});
@@ -153,7 +154,7 @@ export function genSVG({matrix,size},opts){
     }
     return px>=lx-pad&&px<=lx+ls2+pad&&py>=ly-pad&&py<=ly+ls2+pad;
   };
-  let dm='';for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(fS.has(`${r},${c}`))continue;if(inLogoArea(r,c))continue;if(matrix[r][c].dark){if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n);}else dm+=svgMod(c+q,r+q,s,moduleShape);}}
+  let dm='';for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(fS.has(`${r},${c}`))continue;if(inLogoArea(r,c))continue;if(matrix[r][c].dark){if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n);}else dm+=svgMod(c+q,r+q,s,moduleShape,moduleGap);}}
   let fe='';fO.forEach(({r,c},i)=>{fe+=svgFinder(c+q,r+q,s,anchorOuterShape,anchorInnerShape);});
   const bgR=bgAlpha>0?`<rect width="${t}" height="${t}" fill="${fmtC(bgColor,bgAlpha)}"/>`:'';
   let lE='';

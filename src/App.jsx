@@ -24,6 +24,7 @@ function App(){
   const[bgA,setBgA]=useState(1);
   const[scale,setScale]=useState(10);
   const[mShape,setMShape]=useState('square');
+  const[mGap,setMGap]=useState(0);
   const[aOuter,setAOuter]=useState('square');
   const[aInner,setAInner]=useState('square');
   const[logoImg,setLogoImg]=useState(null);
@@ -79,8 +80,8 @@ function App(){
   },[input,logoImg,ec,logoR]);
   useEffect(()=>gen(),[gen]);
 
-  const opts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale,moduleShape:mShape,anchorOuterShape:aOuter,anchorInnerShape:aInner,logoImg,logoDataUrl:logoDU,logoShape:logoSh,logoRatio:logoR,logoBg};
-  useEffect(()=>{if(!qrData||!canvasRef.current)return;renderQR(canvasRef.current,qrData,opts);},[qrData,fgC,fgA,bgC,bgA,scale,mShape,aOuter,aInner,logoImg,logoSh,logoR,logoBg]);
+  const opts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale,moduleShape:mShape,moduleGap:mGap,anchorOuterShape:aOuter,anchorInnerShape:aInner,logoImg,logoDataUrl:logoDU,logoShape:logoSh,logoRatio:logoR,logoBg};
+  useEffect(()=>{if(!qrData||!canvasRef.current)return;renderQR(canvasRef.current,qrData,opts);},[qrData,fgC,fgA,bgC,bgA,scale,mShape,mGap,aOuter,aInner,logoImg,logoSh,logoR,logoBg]);
 
   const dlPng=()=>{if(!qrData)return;setModal({type:'png',dataUrl:getPngUrl(qrData,opts)});};
   const dlSvg=()=>{if(!qrData)return;const{previewUrl,downloadUrl}=getSvgUrls(qrData,opts);setModal({type:'svg',dataUrl:previewUrl,downloadUrl,onCloseExtra:()=>URL.revokeObjectURL(downloadUrl)});};
@@ -92,7 +93,7 @@ function App(){
   const saveCurrent=()=>{
     if(!input.trim())return;
     const name=saveName.trim()||`${cType.toUpperCase()} — ${input.slice(0,30)}`;
-    const updated=addSavedQR(collection,{name,cType,input,fgC,fgA,bgC,bgA,scale,mShape,aOuter,aInner,logoSh,logoR,logoBg,ec});
+    const updated=addSavedQR(collection,{name,cType,input,fgC,fgA,bgC,bgA,scale,mShape,mGap,aOuter,aInner,logoSh,logoR,logoBg,ec});
     setCollection(updated);
     setSaveName('');
     setShowSave(false);
@@ -107,6 +108,7 @@ function App(){
     setBgA(entry.bgA);
     setScale(entry.scale);
     setMShape(entry.mShape);
+    setMGap(entry.mGap||10);
     setAOuter(entry.aOuter);
     setAInner(entry.aInner);
     setLogoSh(entry.logoSh);
@@ -206,6 +208,15 @@ function App(){
             <SecHdr icon={Ic.Gr}>Shapes</SecHdr>
             <div style={{display:'flex',flexDirection:'column',gap:16}}>
               <ShPick label="Data modules" shapes={MS} previewMap={SP} value={mShape} onChange={setMShape}/>
+              {mShape!=='connected-h'&&mShape!=='connected-v'&&mShape!=='fluid'&&(
+                <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                    <span style={{fontSize:11,color:'var(--txtF)',fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>Spacing</span>
+                    <div style={{background:'var(--bg)',border:`1.5px solid var(--brd)`,borderRadius:6,padding:'3px 8px',minWidth:42,textAlign:'center'}}><span style={{fontSize:11.5,fontFamily:'monospace',color:'var(--txt)'}}>{mGap}%</span></div>
+                  </div>
+                  <input type="range" min={0} max={30} step={1} value={mGap} onChange={e=>setMGap(+e.target.value)}/>
+                </div>
+              )}
               <div style={{height:1,background:'var(--brd)'}}/>
               <div style={{fontSize:11,color:'var(--txtF)',fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>Anchor patterns</div>
               <ShPick label="Outer ring" shapes={AS} previewMap={FOP} value={aOuter} onChange={setAOuter}/>
