@@ -29,6 +29,7 @@ function App(){
   const[aInner,setAInner]=useState('square');
   const[logoImg,setLogoImg]=useState(null);
   const[logoDU,setLogoDU]=useState(null);
+  const[logoSvgContent,setLogoSvgContent]=useState(null);
   const[logoSh,setLogoSh]=useState('square');
   const[logoR,setLogoR]=useState(0.22);
   const[logoBg,setLogoBg]=useState('#ffffff');
@@ -80,15 +81,15 @@ function App(){
   },[input,logoImg,ec,logoR]);
   useEffect(()=>gen(),[gen]);
 
-  const opts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale,moduleShape:mShape,moduleGap:mGap,anchorOuterShape:aOuter,anchorInnerShape:aInner,logoImg,logoDataUrl:logoDU,logoShape:logoSh,logoRatio:logoR,logoBg};
+  const opts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale,moduleShape:mShape,moduleGap:mGap,anchorOuterShape:aOuter,anchorInnerShape:aInner,logoImg,logoDataUrl:logoDU,logoSvgContent:logoSvgContent,logoShape:logoSh,logoRatio:logoR,logoBg};
   useEffect(()=>{if(!qrData||!canvasRef.current)return;renderQR(canvasRef.current,qrData,opts);},[qrData,fgC,fgA,bgC,bgA,scale,mShape,mGap,aOuter,aInner,logoImg,logoSh,logoR,logoBg]);
 
   const dlPng=()=>{if(!qrData)return;setModal({type:'png',dataUrl:getPngUrl(qrData,opts)});};
   const dlSvg=()=>{if(!qrData)return;const{previewUrl,downloadUrl}=getSvgUrls(qrData,opts);setModal({type:'svg',dataUrl:previewUrl,downloadUrl,onCloseExtra:()=>URL.revokeObjectURL(downloadUrl)});};
   const copyImg=()=>{if(!canvasRef.current||!qrData)return;const o=document.createElement('canvas');renderQR(o,qrData,opts);o.toBlob(b=>{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);}).catch(()=>alert('Copy not supported.'));},'image/png');};
 
-  const upLogo=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const du=ev.target.result;const img=new Image();img.onload=()=>{setLogoImg(img);setLogoDU(du);const lm=minEc(logoR);const e2=ECR[ec]<ECR[lm]?lm:ec;try{setQrData(generateMatrix(input.trim(),e2));}catch{}};img.src=du;};r.readAsDataURL(f);e.target.value='';};
-  const rmLogo=()=>{setLogoImg(null);setLogoDU(null);try{setQrData(generateMatrix(input.trim(),ec));}catch{}};
+  const upLogo=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const du=ev.target.result;const img=new Image();img.onload=()=>{setLogoImg(img);setLogoDU(du);const lm=minEc(logoR);const e2=ECR[ec]<ECR[lm]?lm:ec;try{setQrData(generateMatrix(input.trim(),e2));}catch{}};img.src=du;if(f.type==='image/svg+xml'){const reader=new FileReader();reader.onload=se=>{try{const parser=new DOMParser();const doc=parser.parseFromString(se.target.result,'image/svg+xml');const svgEl=doc.querySelector('svg');if(svgEl){const viewBox=svgEl.getAttribute('viewBox');let vb={x:0,y:0,w:0,h:0};if(viewBox){const p=viewBox.split(/[\s,]+/).map(Number);vb={x:p[0]||0,y:p[1]||0,w:p[2]||0,h:p[3]||0};}else{const w=parseFloat(svgEl.getAttribute('width'))||0,h=parseFloat(svgEl.getAttribute('height'))||0;vb={x:0,y:0,w,h};}const inner=Array.from(svgEl.childNodes).filter(n=>n.nodeType===1).map(n=>n.outerHTML).join('');setLogoSvgContent({inner,vb});}}catch{setLogoSvgContent(null);}};reader.readAsText(f);}else{setLogoSvgContent(null);}};r.readAsDataURL(f);e.target.value='';};
+  const rmLogo=()=>{setLogoImg(null);setLogoDU(null);setLogoSvgContent(null);try{setQrData(generateMatrix(input.trim(),ec));}catch{}};
 
   const saveCurrent=()=>{
     if(!input.trim())return;
