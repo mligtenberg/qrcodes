@@ -215,7 +215,7 @@ function App(){
                 <div style={{display:'flex',flexDirection:'column',gap:8}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                     <span style={{fontSize:11,color:'var(--txtF)',fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>Spacing</span>
-                    <div style={{background:'var(--bg)',border:`1.5px solid var(--brd)`,borderRadius:6,padding:'3px 8px',minWidth:42,textAlign:'center'}}><span style={{fontSize:11.5,fontFamily:'monospace',color:'var(--txt)'}}>{mGap}%</span></div>
+                    <div style={{background:'var(--bg)',border:`1.5px solid var(--brd)`,borderRadius:6,padding:'3px 8px',minWidth:42,textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:1}}><input type="number" min={0} max={30} step={1} value={mGap} onChange={e=>{const v=+e.target.value;if(v>=0&&v<=30)setMGap(v);}} style={{width:36,background:'transparent',border:'none',color:'var(--txt)',fontSize:11.5,fontFamily:'monospace',textAlign:'center',outline:'none'}}/><span style={{fontSize:11.5,fontFamily:'monospace',color:'var(--txt)'}}>%</span></div>
                   </div>
                   <input type="range" min={0} max={30} step={1} value={mGap} onChange={e=>setMGap(+e.target.value)}/>
                 </div>
