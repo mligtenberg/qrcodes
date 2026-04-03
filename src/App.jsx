@@ -212,7 +212,7 @@ function App(){
             <SecHdr icon={Ic.Gr}>Shapes</SecHdr>
             <div style={{display:'flex',flexDirection:'column',gap:16}}>
               <ShPick label="Data modules" shapes={MS} previewMap={SP} value={mShape} onChange={setMShape}/>
-              {mShape!=='connected-h'&&mShape!=='connected-v'&&mShape!=='fluid'&&(
+              {mShape!=='fluid'&&(
                 <div style={{display:'flex',flexDirection:'column',gap:8}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                     <span style={{fontSize:11,color:'var(--txtF)',fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>Spacing</span>

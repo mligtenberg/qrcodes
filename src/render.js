@@ -13,10 +13,11 @@ export function dMod(ctx,x,y,s,shape,gapPct){
   else if(wg>0)ctx.fillRect(xg,yg,wg,wg);
 }
 
-export function dModC(ctx,x,y,s,shape,n){
+export function dModC(ctx,x,y,s,shape,n,gapPct){
   const r=s*0.38;
-  if(shape==='connected-h'){const g=s*0.08;dRC(ctx,x,y+g,s,s-g*2,r,{tl:!n.W,tr:!n.E,br:!n.E,bl:!n.W});ctx.fill();return;}
-  if(shape==='connected-v'){const g=s*0.08;dRC(ctx,x+g,y,s-g*2,s,r,{tl:!n.N,tr:!n.N,br:!n.S,bl:!n.S});ctx.fill();return;}
+  const gp=(gapPct||0)/100;
+  if(shape==='connected-h'){const g=s*gp;dRC(ctx,x,y+g,s,s-g*2,r,{tl:!n.W,tr:!n.E,br:!n.E,bl:!n.W});ctx.fill();return;}
+  if(shape==='connected-v'){const g=s*gp;dRC(ctx,x+g,y,s-g*2,s,r,{tl:!n.N,tr:!n.N,br:!n.S,bl:!n.S});ctx.fill();return;}
   if(shape==='fluid'){
     const tl=!(n.N||n.W),tr=!(n.N||n.E),br=!(n.S||n.E),bl=!(n.S||n.W);
     dRC(ctx,x,y,s,s,r,{tl,tr,br,bl});ctx.fill();
@@ -62,7 +63,7 @@ export function renderQR(canvas,{matrix,size},opts){
   fg.fillStyle=fgColor;
   for(let r=0;r<size;r++)for(let c=0;c<size;c++){
     if(fS.has(`${r},${c}`))continue;
-    if(matrix[r][c].dark){fg.fillStyle=fgColor;if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dModC(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,n);}else dMod(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,moduleGap);}
+    if(matrix[r][c].dark){fg.fillStyle=fgColor;if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dModC(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,n,moduleGap);}else dMod(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,moduleGap);}
   }
   fO.forEach(({r,c})=>dFinder(fg,(c+quiet)*scale,(r+quiet)*scale,scale,anchorOuterShape,anchorInnerShape,fgColor));
   if(opts.logoImg&&(!opts.logoBg||opts.logoBg==='transparent')){
@@ -101,11 +102,12 @@ export function svgMod(x,y,s,shape,gapPct){
   if(shape==='diamond'){const cx=x+s/2,cy=y+s/2,r=Math.max(0,wg*0.48);return `<polygon points="${cx},${cy-r} ${cx+r},${cy} ${cx},${cy+r} ${cx-r},${cy}"/>`;}
   return wg>0?`<rect x="${xg}" y="${yg}" width="${wg}" height="${wg}"/>`:'';
 }
-export function svgModC(x,y,s,shape,n){
+export function svgModC(x,y,s,shape,n,gapPct){
   const r=s*0.38;
+  const gp=(gapPct||0)/100;
   const sC=(x,y,w,h,r,{tl=true,tr=true,br=true,bl=true})=>{r=Math.min(r,w/2,h/2);return[`M${x+(tl?r:0)},${y}`,`L${x+w-(tr?r:0)},${y}`,tr?`Q${x+w},${y} ${x+w},${y+r}`:`L${x+w},${y}`,`L${x+w},${y+h-(br?r:0)}`,br?`Q${x+w},${y+h} ${x+w-r},${y+h}`:`L${x+w},${y+h}`,`L${x+(bl?r:0)},${y+h}`,bl?`Q${x},${y+h} ${x},${y+h-r}`:`L${x},${y+h}`,`L${x},${y+(tl?r:0)}`,tl?`Q${x},${y} ${x+r},${y}`:`L${x},${y}`,'Z'].join('');};
-  if(shape==='connected-h'){const g=s*0.08;return `<path d="${sC(x,y+g,s,s-g*2,r,{tl:!n.W,tr:!n.E,br:!n.E,bl:!n.W})}"/>`;}
-  if(shape==='connected-v'){const g=s*0.08;return `<path d="${sC(x+g,y,s-g*2,s,r,{tl:!n.N,tr:!n.N,br:!n.S,bl:!n.S})}"/>`;}
+  if(shape==='connected-h'){const g=s*(gp>0?gp:0.08);return `<path d="${sC(x,y+g,s,s-g*2,r,{tl:!n.W,tr:!n.E,br:!n.E,bl:!n.W})}"/>`;}
+  if(shape==='connected-v'){const g=s*(gp>0?gp:0.08);return `<path d="${sC(x+g,y,s-g*2,s,r,{tl:!n.N,tr:!n.N,br:!n.S,bl:!n.S})}"/>`;}
   if(shape==='fluid'){
     const tl=!(n.N||n.W),tr=!(n.N||n.E),br=!(n.S||n.E),bl=!(n.S||n.W);
     let d=sC(x,y,s,s,r,{tl,tr,br,bl});
@@ -145,7 +147,7 @@ export function genSVG({matrix,size},opts){
     else{cutout=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls2+pad*2}" height="${ls2+pad*2}" fill="black"/>`;}
     maskDef=`<mask id="qm"><rect width="${t}" height="${t}" fill="white"/>${cutout}</mask>`;
   }
-  let dm='';for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(fS.has(`${r},${c}`))continue;if(matrix[r][c].dark){if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n);}else dm+=svgMod(c+q,r+q,s,moduleShape,moduleGap);}}
+  let dm='';for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(fS.has(`${r},${c}`))continue;if(matrix[r][c].dark){if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n,moduleGap);}else dm+=svgMod(c+q,r+q,s,moduleShape,moduleGap);}}
   let fe='';fO.forEach(({r,c},i)=>{fe+=svgFinder(c+q,r+q,s,anchorOuterShape,anchorInnerShape);});
   const bgR=bgAlpha>0?`<rect width="${t}" height="${t}" fill="${fmtC(bgColor,bgAlpha)}"/>`:'';
   let lE='';
