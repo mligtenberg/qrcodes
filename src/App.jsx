@@ -27,6 +27,8 @@ function App(){
   const[mGap,setMGap]=useState(0);
   const[aOuter,setAOuter]=useState('square');
   const[aInner,setAInner]=useState('square');
+  const[aInnerSize,setAInnerSize]=useState(1);
+  const[aBorder,setABorder]=useState(1);
   const[logoImg,setLogoImg]=useState(null);
   const[logoDU,setLogoDU]=useState(null);
   const[logoSvgContent,setLogoSvgContent]=useState(null);
@@ -82,8 +84,8 @@ function App(){
   },[input,logoImg,ec,logoR,ecManual]);
   useEffect(()=>gen(),[gen]);
 
-  const opts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale,moduleShape:mShape,moduleGap:mGap,anchorOuterShape:aOuter,anchorInnerShape:aInner,logoImg,logoDataUrl:logoDU,logoSvgContent:logoSvgContent,logoShape:logoSh,logoRatio:logoR,logoBg};
-  useEffect(()=>{if(!qrData||!canvasRef.current)return;renderQR(canvasRef.current,qrData,opts);},[qrData,fgC,fgA,bgC,bgA,scale,mShape,mGap,aOuter,aInner,logoImg,logoSh,logoR,logoBg]);
+  const opts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale,moduleShape:mShape,moduleGap:mGap,anchorOuterShape:aOuter,anchorInnerShape:aInner,anchorInnerSize:aInnerSize,anchorBorder:aBorder,logoImg,logoDataUrl:logoDU,logoSvgContent:logoSvgContent,logoShape:logoSh,logoRatio:logoR,logoBg};
+  useEffect(()=>{if(!qrData||!canvasRef.current)return;renderQR(canvasRef.current,qrData,opts);},[qrData,fgC,fgA,bgC,bgA,scale,mShape,mGap,aOuter,aInner,aInnerSize,aBorder,logoImg,logoSh,logoR,logoBg]);
 
   const dlPng=()=>{if(!qrData)return;setModal({type:'png',dataUrl:getPngUrl(qrData,opts)});};
   const dlSvg=()=>{if(!qrData)return;const{previewUrl,downloadUrl}=getSvgUrls(qrData,opts);setModal({type:'svg',dataUrl:previewUrl,downloadUrl,onCloseExtra:()=>URL.revokeObjectURL(downloadUrl)});};
@@ -225,6 +227,20 @@ function App(){
               <div style={{fontSize:11,color:'var(--txtF)',fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>Anchor patterns</div>
               <ShPick label="Outer ring" shapes={AS} previewMap={FOP} value={aOuter} onChange={setAOuter}/>
               <ShPick label="Inner dot"  shapes={AS} previewMap={FIP} value={aInner} onChange={setAInner}/>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span style={{fontSize:11,color:'var(--txtF)',fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>Inner dot size</span>
+                  <div style={{background:'var(--bg)',border:`1.5px solid var(--brd)`,borderRadius:6,padding:'3px 8px',minWidth:42,textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:1}}><input type="number" min={0.5} max={1.5} step={0.1} value={aInnerSize} onChange={e=>{const v=+e.target.value;if(v>=0.5&&v<=1.5)setAInnerSize(v);}} style={{width:36,background:'transparent',border:'none',color:'var(--txt)',fontSize:11.5,fontFamily:'monospace',textAlign:'center',outline:'none'}}/><span style={{fontSize:11.5,fontFamily:'monospace',color:'var(--txt)'}}>x</span></div>
+                </div>
+                <input type="range" min={0.5} max={1.5} step={0.1} value={aInnerSize} onChange={e=>setAInnerSize(+e.target.value)}/>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span style={{fontSize:11,color:'var(--txtF)',fontWeight:600,letterSpacing:'0.06em',textTransform:'uppercase'}}>Outer ring thickness</span>
+                  <div style={{background:'var(--bg)',border:`1.5px solid var(--brd)`,borderRadius:6,padding:'3px 8px',minWidth:42,textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:1}}><input type="number" min={0.6} max={1.5} step={0.1} value={aBorder} onChange={e=>{const v=+e.target.value;if(v>=0.6&&v<=1.5)setABorder(v);}} style={{width:36,background:'transparent',border:'none',color:'var(--txt)',fontSize:11.5,fontFamily:'monospace',textAlign:'center',outline:'none'}}/><span style={{fontSize:11.5,fontFamily:'monospace',color:'var(--txt)'}}>x</span></div>
+                </div>
+                <input type="range" min={0.6} max={1.5} step={0.1} value={aBorder} onChange={e=>setABorder(+e.target.value)}/>
+              </div>
             </div>
           </div>
 

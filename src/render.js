@@ -35,21 +35,22 @@ export function gNbr(matrix,size,fS,r,c){
   return{N:dk(-1,0),S:dk(1,0),E:dk(0,1),W:dk(0,-1),NE:dk(-1,1),NW:dk(-1,-1),SE:dk(1,1),SW:dk(1,-1)};
 }
 
-export function dFinder(fg,ox,oy,s,oShape,iShape,fgColor){
-  const full=7*s;
+export function dFinder(fg,ox,oy,s,oShape,iShape,fgColor,border,innerSize){
+  const full=7*s,bt=border||1,is=innerSize||1;
   fg.fillStyle=fgColor;
   const dOuter=()=>{if(oShape==='circle'){fg.beginPath();fg.arc(ox+full/2,oy+full/2,full/2,0,Math.PI*2);fg.fill();}else if(oShape==='rounded'){dRR(fg,ox,oy,full,full,full*0.22);fg.fill();}else fg.fillRect(ox,oy,full,full);};
-  const punchHole=()=>{fg.globalCompositeOperation='destination-out';fg.fillStyle='rgba(0,0,0,1)';if(oShape==='circle'){fg.beginPath();fg.arc(ox+full/2,oy+full/2,full/2-s,0,Math.PI*2);fg.fill();}else if(oShape==='rounded'){dRR(fg,ox+s,oy+s,5*s,5*s,5*s*0.18);fg.fill();}else fg.fillRect(ox+s,oy+s,5*s,5*s);fg.globalCompositeOperation='source-over';};
+  const punchHole=()=>{fg.globalCompositeOperation='destination-out';fg.fillStyle='rgba(0,0,0,1)';const hs=full-2*bt*s,hx=ox+bt*s,hy=oy+bt*s;if(oShape==='circle'){fg.beginPath();fg.arc(ox+full/2,oy+full/2,hs/2,0,Math.PI*2);fg.fill();}else if(oShape==='rounded'){dRR(fg,hx,hy,hs,hs,hs*0.18);fg.fill();}else fg.fillRect(hx,hy,hs,hs);fg.globalCompositeOperation='source-over';};
   dOuter();punchHole();
   fg.fillStyle=fgColor;
-  const ix=ox+2*s,iy=oy+2*s,iw=3*s;
-  if(iShape==='circle'){fg.beginPath();fg.arc(ix+iw/2,iy+iw/2,iw/2,0,Math.PI*2);fg.fill();}
-  else if(iShape==='rounded'){dRR(fg,ix,iy,iw,iw,iw*0.28);fg.fill();}
-  else fg.fillRect(ix,iy,iw,iw);
+  const ix=ox+2*s,iy=oy+2*s,iw=3*s*is;
+  const iox=ox+(7*s-iw)/2,ioy=oy+(7*s-iw)/2;
+  if(iShape==='circle'){fg.beginPath();fg.arc(iox+iw/2,ioy+iw/2,iw/2,0,Math.PI*2);fg.fill();}
+  else if(iShape==='rounded'){dRR(fg,iox,ioy,iw,iw,iw*0.28);fg.fill();}
+  else fg.fillRect(iox,ioy,iw,iw);
 }
 
 export function renderQR(canvas,{matrix,size},opts){
-  const{fgColor,fgAlpha,bgColor,bgAlpha,scale,moduleShape,moduleGap,anchorOuterShape,anchorInnerShape}=opts;
+  const{fgColor,fgAlpha,bgColor,bgAlpha,scale,moduleShape,moduleGap,anchorOuterShape,anchorInnerShape,anchorInnerSize,anchorBorder}=opts;
   const quiet=4,total=(size+quiet*2)*scale;
   canvas.width=total;canvas.height=total;
   const ctx=canvas.getContext('2d');
@@ -65,7 +66,7 @@ export function renderQR(canvas,{matrix,size},opts){
     if(fS.has(`${r},${c}`))continue;
     if(matrix[r][c].dark){fg.fillStyle=fgColor;if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dModC(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,n,moduleGap);}else dMod(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,moduleGap);}
   }
-  fO.forEach(({r,c})=>dFinder(fg,(c+quiet)*scale,(r+quiet)*scale,scale,anchorOuterShape,anchorInnerShape,fgColor));
+  fO.forEach(({r,c})=>dFinder(fg,(c+quiet)*scale,(r+quiet)*scale,scale,anchorOuterShape,anchorInnerShape,fgColor,anchorBorder,anchorInnerSize));
   if(opts.logoImg&&(!opts.logoBg||opts.logoBg==='transparent')){
     const ls=Math.round(total*(opts.logoRatio||0.22));
     const lx=Math.round((total-ls)/2),ly=Math.round((total-ls)/2),pad=Math.round(ls*0.12);
@@ -119,20 +120,21 @@ export function svgModC(x,y,s,shape,n,gapPct){
   }
   return svgMod(x,y,s,shape);
 }
-export function svgFinder(ox,oy,s,oS,iS){
-  const full=7*s,ix=ox+2*s,iy=oy+2*s,iw=3*s;
+export function svgFinder(ox,oy,s,oS,iS,border,innerSize){
+  const full=7*s,bt=border||1,is=innerSize||1,hs=full-2*bt*s,hx=ox+bt*s,hy=oy+bt*s;
+  const iw=3*s*is,iox=ox+(7*s-iw)/2,ioy=oy+(7*s-iw)/2;
   let ring='';
-  if(oS==='circle')ring=`<path fill-rule="evenodd" d="M${ox+full/2},${oy} a${full/2},${full/2} 0 1,0 0.001,0 Z M${ox+full/2},${oy+s} a${full/2-s},${full/2-s} 0 1,1 -0.001,0 Z"/>`;
-  else if(oS==='rounded')ring=`<path fill-rule="evenodd" d="${svgRR(ox,oy,full,full,full*0.22)} ${svgRR(ox+s,oy+s,5*s,5*s,5*s*0.18)}"/>`;
-  else ring=`<path fill-rule="evenodd" d="M${ox},${oy}h${full}v${full}h-${full}Z M${ox+s},${oy+s}h${5*s}v${5*s}h-${5*s}Z"/>`;
+  if(oS==='circle')ring=`<path fill-rule="evenodd" d="M${ox+full/2},${oy} a${full/2},${full/2} 0 1,0 0.001,0 Z M${ox+full/2},${oy+bt*s} a${hs/2},${hs/2} 0 1,1 -0.001,0 Z"/>`;
+  else if(oS==='rounded')ring=`<path fill-rule="evenodd" d="${svgRR(ox,oy,full,full,full*0.22)} ${svgRR(hx,hy,hs,hs,hs*0.18)}"/>`;
+  else ring=`<path fill-rule="evenodd" d="M${ox},${oy}h${full}v${full}h-${full}Z M${hx},${hy}h${hs}v${hs}h-${hs}Z"/>`;
   let inner='';
-  if(iS==='circle')inner=`<circle cx="${ix+iw/2}" cy="${iy+iw/2}" r="${iw/2}"/>`;
-  else if(iS==='rounded')inner=`<path d="${svgRR(ix,iy,iw,iw,iw*0.28)}"/>`;
-  else inner=`<rect x="${ix}" y="${iy}" width="${iw}" height="${iw}"/>`;
+  if(iS==='circle')inner=`<circle cx="${iox+iw/2}" cy="${ioy+iw/2}" r="${iw/2}"/>`;
+  else if(iS==='rounded')inner=`<path d="${svgRR(iox,ioy,iw,iw,iw*0.28)}"/>`;
+  else inner=`<rect x="${iox}" y="${ioy}" width="${iw}" height="${iw}"/>`;
   return ring+inner;
 }
 export function genSVG({matrix,size},opts){
-  const{fgColor,fgAlpha,bgColor,bgAlpha,moduleShape,moduleGap,anchorOuterShape,anchorInnerShape}=opts;
+  const{fgColor,fgAlpha,bgColor,bgAlpha,moduleShape,moduleGap,anchorOuterShape,anchorInnerShape,anchorInnerSize,anchorBorder}=opts;
   const q=4,t=size+q*2,s=1,fg=fmtC(fgColor,fgAlpha);
   const fO=[{r:0,c:0},{r:0,c:size-7},{r:size-7,c:0}];
   const fS=new Set();fO.forEach(({r,c})=>{for(let dr=0;dr<7;dr++)for(let dc=0;dc<7;dc++)fS.add(`${r+dr},${c+dc}`);});
@@ -148,7 +150,7 @@ export function genSVG({matrix,size},opts){
     maskDef=`<mask id="qm"><rect width="${t}" height="${t}" fill="white"/>${cutout}</mask>`;
   }
   let dm='';for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(fS.has(`${r},${c}`))continue;if(matrix[r][c].dark){if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n,moduleGap);}else dm+=svgMod(c+q,r+q,s,moduleShape,moduleGap);}}
-  let fe='';fO.forEach(({r,c},i)=>{fe+=svgFinder(c+q,r+q,s,anchorOuterShape,anchorInnerShape);});
+  let fe='';fO.forEach(({r,c},i)=>{fe+=svgFinder(c+q,r+q,s,anchorOuterShape,anchorInnerShape,anchorBorder,anchorInnerSize);});
   const bgR=bgAlpha>0?`<rect width="${t}" height="${t}" fill="${fmtC(bgColor,bgAlpha)}"/>`:'';
   let lE='';
   if(opts.logoImg&&opts.logoDataUrl){const ls2=t*(opts.logoRatio||0.22),lx=(t-ls2)/2,ly=(t-ls2)/2,pad=ls2*0.12,bg=opts.logoBg||'#ffffff';let bgEl='',clipEl='',logoEl='';if(opts.logoShape==='circle'){bgEl=`<circle cx="${lx+ls2/2}" cy="${ly+ls2/2}" r="${ls2/2+pad}" fill="${bg}"/>`;clipEl=`<clipPath id="lc"><circle cx="${lx+ls2/2}" cy="${ly+ls2/2}" r="${ls2/2}"/></clipPath>`;}else if(opts.logoShape==='rounded'){const rp=(ls2+pad*2)*0.2,ri=ls2*0.18;bgEl=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls2+pad*2}" height="${ls2+pad*2}" rx="${rp}" fill="${bg}"/>`;clipEl=`<clipPath id="lc"><rect x="${lx}" y="${ly}" width="${ls2}" height="${ls2}" rx="${ri}"/></clipPath>`;}else{bgEl=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls2+pad*2}" height="${ls2+pad*2}" fill="${bg}"/>`;}if(opts.logoSvgContent){const{inner,vb}=opts.logoSvgContent;const vw=vb.w||1,vh=vb.h||1;const sc=ls2/Math.max(vw,vh);const ox=lx+(ls2-vw*sc)/2-vb.x*sc,oy=ly+(ls2-vh*sc)/2-vb.y*sc;logoEl=`<g clip-path="url(#lc)" transform="translate(${ox},${oy}) scale(${sc})">${inner}</g>`;}else{logoEl=`<image href="${opts.logoDataUrl}" x="${lx}" y="${ly}" width="${ls2}" height="${ls2}"${clipEl?' clip-path="url(#lc)"':''} preserveAspectRatio="xMidYMid slice"/>`;}lE=bgEl+clipEl+logoEl;}
