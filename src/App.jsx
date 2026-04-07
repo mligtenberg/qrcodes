@@ -141,11 +141,11 @@ function App(){
   const s1={background:'var(--surf)',border:`1px solid var(--brd)`,borderRadius:8,padding:'8px 12px',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'};
 
   return(
-    <div ref={rootRef} style={{fontFamily:"'Inter',system-ui,sans-serif",height:'100vh',background:'var(--bg)',color:'var(--txt)',display:'flex',flexDirection:'column'}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');*{box-sizing:border-box;}input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--brd2);outline:none;}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--acc);cursor:pointer;border:2px solid color-mix(in srgb,var(--acc) 60%,black);}input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--acc);cursor:pointer;border:none;}select{color:var(--txt);}.eb:hover:not(:disabled){opacity:.88;transform:translateY(-1px);}.eb{transition:all .15s;}::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px;}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}input[type=number]{-moz-appearance:textfield;}`}</style>
+    <div ref={rootRef} style={{fontFamily:"'Inter',system-ui,sans-serif",height:'100dvh',background:'var(--bg)',color:'var(--txt)',display:'flex',flexDirection:'column'}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');*{box-sizing:border-box;margin:0;padding:0;}input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:var(--brd2);outline:none;}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--acc);cursor:pointer;border:2px solid color-mix(in srgb,var(--acc) 60%,black);}input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--acc);cursor:pointer;border:none;}select{color:var(--txt);}.eb:hover:not(:disabled){opacity:.88;transform:translateY(-1px);}.eb{transition:all .15s;}::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px;}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}input[type=number]{-moz-appearance:textfield;}@media(max-width:768px){.ml{flex-direction:column!important;}.sb{width:100%!important;border-right:none!important;border-bottom:1px solid var(--brd)!important;height:auto!important;order:1!important;max-height:60vh!important;}.pv{order:0!important;padding:20px 16px!important;flex:none!important;}.pv canvas{max-width:200px!important;max-height:200px!important;}.pv>div:first-child{min-width:0!important;min-height:0!important;padding:12px!important;}.tb{padding:12px 16px!important;}.tb .hide{display:none!important;}.xbtn{flex-wrap:wrap!important;}.xbtn button{flex:1!important;min-width:100px!important;}}`}</style>
 
       {/* Topbar */}
-      <div style={{borderBottom:`1px solid var(--brd)`,padding:'12px 24px',display:'flex',alignItems:'center',gap:10,flexShrink:0,background:'var(--surf)'}}>
+      <div style={{borderBottom:`1px solid var(--brd)`,padding:'12px 24px',display:'flex',alignItems:'center',gap:10,flexShrink:0,background:'var(--surf)'}} className="tb">
         <span style={{color:'var(--acc)',display:'flex'}}><Ic.QR/></span>
         <span style={{fontSize:15,fontWeight:700,letterSpacing:'-0.3px',color:'var(--txt)'}}>QR Studio</span>
         <div ref={collectionRef} style={{position:'relative',marginLeft:8}}>
@@ -153,7 +153,7 @@ function App(){
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
             {collection.length>0&&<span style={{position:'absolute',top:-4,right:-4,width:14,height:14,background:'var(--acc)',color:'white',borderRadius:'50%',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,border:'2px solid var(--surf)'}}>{collection.length}</span>}
           </button>
-          {showCollection&&<div style={{position:'absolute',top:'calc(100% + 8px)',left:0,width:300,background:'var(--surf)',border:`1px solid var(--brd2)`,borderRadius:12,boxShadow:'0 12px 40px rgba(0,0,0,0.25)',zIndex:100,overflow:'hidden'}}>
+          {showCollection&&<div style={{position:'absolute',top:'calc(100% + 8px)',left:0,width:300,maxWidth:'calc(100vw - 32px)',background:'var(--surf)',border:`1px solid var(--brd2)`,borderRadius:12,boxShadow:'0 12px 40px rgba(0,0,0,0.25)',zIndex:100,overflow:'hidden'}}>
             <div style={{padding:'12px 14px',borderBottom:`1px solid var(--brd)`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <span style={{fontSize:13,fontWeight:600,color:'var(--txt)'}}>Saved QR codes</span>
               <span style={{fontSize:11,color:'var(--txtD)'}}>{collection.length}</span>
@@ -178,9 +178,9 @@ function App(){
         <span style={{fontSize:11,color:'var(--txtD)',marginLeft:6}}>100% in-browser</span>
       </div>
 
-      <div style={{display:'flex',flex:1,minHeight:0,overflow:'hidden'}}>
+      <div className="ml" style={{display:'flex',flex:1,minHeight:0,overflow:'hidden'}}>
         {/* Sidebar */}
-        <div style={{width:320,flexShrink:0,borderRight:`1px solid var(--brd)`,overflowY:'auto',height:'100%',padding:'20px',display:'flex',flexDirection:'column',gap:22,background:'var(--surf)'}}>
+        <div className="sb" style={{width:320,flexShrink:0,borderRight:`1px solid var(--brd)`,overflowY:'auto',height:'100%',padding:'20px',display:'flex',flexDirection:'column',gap:22,background:'var(--surf)'}}>
 
           <div>
             <SecHdr icon={Ic.Txt}>Content</SecHdr>
@@ -308,12 +308,12 @@ function App(){
         </div>
 
         {/* Preview */}
-        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px 24px',gap:20,background:'var(--bg)'}}>
+        <div className="pv" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px 24px',gap:20,background:'var(--bg)'}}>
           <div style={{backgroundImage:chkBg,borderRadius:16,overflow:'hidden',border:`1px solid var(--brd)`,display:'flex',alignItems:'center',justifyContent:'center',minWidth:260,minHeight:260,padding:20}}>
             {qrData?<canvas ref={canvasRef} style={{imageRendering:'pixelated',maxWidth:380,maxHeight:380,display:'block',borderRadius:2}}/>:<div style={{textAlign:'center',color:'var(--txtD)',padding:'32px 24px'}}><div style={{marginBottom:10,opacity:.2,transform:'scale(2)',display:'inline-block'}}><Ic.QR/></div><div style={{fontSize:13,marginTop:8}}>Start typing to generate</div></div>}
           </div>
           {qrData&&<div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'center'}}>{[['Version',`V${Math.round((qrData.size-17)/4)}`],['Modules',`${qrData.size}×${qrData.size}`],['EC',effEc],['Image',`${totalPx}×${totalPx}px`]].map(([k,v])=><div key={k} style={{background:'var(--surf)',border:`1px solid var(--brd)`,borderRadius:20,padding:'3px 10px',display:'flex',gap:5,alignItems:'center'}}><span style={{fontSize:10,color:'var(--txtD)',fontWeight:600}}>{k}</span><span style={{fontSize:10.5,color:'var(--txtM)',fontFamily:'monospace'}}>{v}</span></div>)}</div>}
-          <div style={{display:'flex',gap:8}}>
+          <div className="xbtn" style={{display:'flex',gap:8}}>
             <button className="eb" onClick={dlPng} disabled={!qrData} style={{display:'flex',alignItems:'center',gap:7,padding:'9px 20px',fontSize:12.5,fontWeight:600,background:qrData?'var(--acc)':'var(--surf2)',color:qrData?'white':'var(--txtD)',border:'none',borderRadius:8,cursor:qrData?'pointer':'default'}}><Ic.Dl/> PNG</button>
             <button className="eb" onClick={dlSvg} disabled={!qrData} style={{display:'flex',alignItems:'center',gap:7,padding:'9px 20px',fontSize:12.5,fontWeight:600,background:'var(--surf)',color:qrData?'var(--txt)':'var(--txtD)',border:`1.5px solid ${qrData?'var(--brd2)':'var(--brd)'}`,borderRadius:8,cursor:qrData?'pointer':'default'}}><Ic.Dl/> SVG</button>
             <button className="eb" onClick={copyImg} disabled={!qrData} style={{display:'flex',alignItems:'center',gap:7,padding:'9px 20px',fontSize:12.5,fontWeight:600,background:copied?'var(--okBg)':'var(--surf)',color:copied?'var(--ok)':qrData?'var(--txt)':'var(--txtD)',border:`1.5px solid ${copied?'var(--okBdr)':qrData?'var(--brd2)':'var(--brd)'}`,borderRadius:8,cursor:qrData?'pointer':'default',transition:'all .2s'}}>{copied?<><Ic.Ok/> Copied!</>:<><Ic.Cp/> Copy</>}</button>
