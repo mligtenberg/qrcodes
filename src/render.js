@@ -1,4 +1,17 @@
-export function h2r(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+function pHex(hex){
+  if(typeof hex!=='string'||!hex.startsWith('#'))return null;
+  if(hex.length===4){
+    const r=parseInt(hex[1]+hex[1],16),g=parseInt(hex[2]+hex[2],16),b=parseInt(hex[3]+hex[3],16);
+    return Number.isNaN(r)||Number.isNaN(g)||Number.isNaN(b)?null:{r,g,b};
+  }
+  if(hex.length===7){
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return Number.isNaN(r)||Number.isNaN(g)||Number.isNaN(b)?null:{r,g,b};
+  }
+  return null;
+}
+
+export function h2r(hex,a){const c=pHex(hex);if(!c)return `rgba(0,0,0,${a})`;return `rgba(${c.r},${c.g},${c.b},${a})`;}
 
 export function dRR(ctx,x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
 
@@ -105,7 +118,7 @@ export function renderQR(canvas,{matrix,size},opts){
   }
 }
 
-export function fmtC(hex,a){if(a<=0)return'none';const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);if(a>=1)return `rgb(${r},${g},${b})`;return `rgba(${r},${g},${b},${a.toFixed(3)})`;}
+export function fmtC(hex,a){if(a<=0)return'none';const c=pHex(hex);if(!c)return a>=1?'rgb(0,0,0)':`rgba(0,0,0,${a.toFixed(3)})`;if(a>=1)return `rgb(${c.r},${c.g},${c.b})`;return `rgba(${c.r},${c.g},${c.b},${a.toFixed(3)})`;}
 export function svgRR(x,y,w,h,r){r=Math.min(r,w/2,h/2);return `M${x+r},${y}L${x+w-r},${y}Q${x+w},${y} ${x+w},${y+r}L${x+w},${y+h-r}Q${x+w},${y+h} ${x+w-r},${y+h}L${x+r},${y+h}Q${x},${y+h} ${x},${y+h-r}L${x},${y+r}Q${x},${y} ${x+r},${y}Z`;}
 export function svgMod(x,y,s,shape,gapPct){
   const gp=gapPct||0;
@@ -124,12 +137,12 @@ export function svgModC(x,y,s,shape,n,gapPct){
   if(shape==='connected-v'){const g=s*(gp>0?gp:0.08);return `<path d="${sC(x+g,y,s-g*2,s,r,{tl:!n.N,tr:!n.N,br:!n.S,bl:!n.S})}"/>`;}
   if(shape==='fluid'){
     const tl=!(n.N||n.W),tr=!(n.N||n.E),br=!(n.S||n.E),bl=!(n.S||n.W);
-    let d=sC(x,y,s,s,r,{tl,tr,br,bl});
-    if(n.N&&n.W&&!n.NW)d+=` M${x+r},${y} L${x},${y} L${x},${y+r} A${r},${r} 0 0,0 ${x+r},${y} Z`;
-    if(n.N&&n.E&&!n.NE)d+=` M${x+s-r},${y} L${x+s},${y} L${x+s},${y+r} A${r},${r} 0 0,1 ${x+s-r},${y} Z`;
-    if(n.S&&n.E&&!n.SE)d+=` M${x+s},${y+s-r} L${x+s},${y+s} L${x+s-r},${y+s} A${r},${r} 0 0,0 ${x+s},${y+s-r} Z`;
-    if(n.S&&n.W&&!n.SW)d+=` M${x+r},${y+s} L${x},${y+s} L${x},${y+s-r} A${r},${r} 0 0,1 ${x+r},${y+s} Z`;
-    return `<path d="${d}"/>`;
+    const parts=[`<path d="${sC(x,y,s,s,r,{tl,tr,br,bl})}"/>`];
+    if(n.N&&n.W&&!n.NW)parts.push(`<path d="M${x+r},${y} L${x},${y} L${x},${y+r} A${r},${r} 0 0,0 ${x+r},${y} Z"/>`);
+    if(n.N&&n.E&&!n.NE)parts.push(`<path d="M${x+s-r},${y} L${x+s},${y} L${x+s},${y+r} A${r},${r} 0 0,1 ${x+s-r},${y} Z"/>`);
+    if(n.S&&n.E&&!n.SE)parts.push(`<path d="M${x+s},${y+s-r} L${x+s},${y+s} L${x+s-r},${y+s} A${r},${r} 0 0,1 ${x+s},${y+s-r} Z"/>`);
+    if(n.S&&n.W&&!n.SW)parts.push(`<path d="M${x+r},${y+s} L${x},${y+s} L${x},${y+s-r} A${r},${r} 0 0,1 ${x+r},${y+s} Z"/>`);
+    return parts.join('');
   }
   return svgMod(x,y,s,shape);
 }
@@ -175,7 +188,7 @@ export function genSVG({matrix,size},opts){
         const x=c+q+gap,y=r+q+gap;
         d+=`M${x},${y}h${wg}v${wg}h-${wg}Z`;
       }
-      dm=`<path d="${d}"/>`;
+      dm=`<path fill="${fg}" d="${d}"/>`;
     }
   }else{
     for(let r=0;r<size;r++)for(let c=0;c<size;c++){
