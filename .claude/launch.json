@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "qrcodes",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-p", "3000", "."],
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["run", "dev"],
       "port": 3000
     }
   ]
