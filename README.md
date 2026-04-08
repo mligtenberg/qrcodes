@@ -116,6 +116,8 @@ The project is deployed to GitHub Pages at `mligtenberg.github.io/qrcodes`. To d
 
 This project uses the QR Code ISO/IEC 18004 standard. Error correction levels are:
 
+QR generation logic is based on [kazuhikoarase/qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator).
+
 - **L** – ~7% recovery capacity (smallest size)
 - **M** – ~15% recovery capacity
 - **Q** – ~25% recovery capacity
