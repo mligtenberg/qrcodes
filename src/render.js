@@ -62,9 +62,22 @@ export function renderQR(canvas,{matrix,size},opts){
   const fS=new Set();fO.forEach(({r,c})=>{for(let dr=0;dr<7;dr++)for(let dc=0;dc<7;dc++)fS.add(`${r+dr},${c+dc}`);});
   const CON=new Set(['connected-h','connected-v','fluid']);
   fg.fillStyle=fgColor;
-  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
-    if(fS.has(`${r},${c}`))continue;
-    if(matrix[r][c].dark){fg.fillStyle=fgColor;if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dModC(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,n,moduleGap);}else dMod(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,moduleGap);}
+  if(moduleShape==='square'){
+    const gap=scale*((moduleGap||0)/100);
+    const wg=scale-gap*2;
+    if(wg>0){
+      fg.beginPath();
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        if(fS.has(`${r},${c}`))continue;
+        if(matrix[r][c].dark)fg.rect((c+quiet)*scale+gap,(r+quiet)*scale+gap,wg,wg);
+      }
+      fg.fill();
+    }
+  }else{
+    for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+      if(fS.has(`${r},${c}`))continue;
+      if(matrix[r][c].dark){fg.fillStyle=fgColor;if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dModC(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,n,moduleGap);}else dMod(fg,(c+quiet)*scale,(r+quiet)*scale,scale,moduleShape,moduleGap);}
+    }
   }
   fO.forEach(({r,c})=>dFinder(fg,(c+quiet)*scale,(r+quiet)*scale,scale,anchorOuterShape,anchorInnerShape,fgColor,anchorBorder,anchorInnerSize));
   if(opts.logoImg&&(!opts.logoBg||opts.logoBg==='transparent')){
@@ -149,7 +162,29 @@ export function genSVG({matrix,size},opts){
     else{cutout=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls2+pad*2}" height="${ls2+pad*2}" fill="black"/>`;}
     maskDef=`<mask id="qm"><rect width="${t}" height="${t}" fill="white"/>${cutout}</mask>`;
   }
-  let dm='';for(let r=0;r<size;r++)for(let c=0;c<size;c++){if(fS.has(`${r},${c}`))continue;if(matrix[r][c].dark){if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n,moduleGap);}else dm+=svgMod(c+q,r+q,s,moduleShape,moduleGap);}}
+  let dm='';
+  if(moduleShape==='square'){
+    const gp=moduleGap||0;
+    const gap=s*(gp/100);
+    const wg=s-gap*2;
+    if(wg>0){
+      let d='';
+      for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+        if(fS.has(`${r},${c}`))continue;
+        if(!matrix[r][c].dark)continue;
+        const x=c+q+gap,y=r+q+gap;
+        d+=`M${x},${y}h${wg}v${wg}h-${wg}Z`;
+      }
+      dm=`<path d="${d}"/>`;
+    }
+  }else{
+    for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+      if(fS.has(`${r},${c}`))continue;
+      if(matrix[r][c].dark){
+        if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n,moduleGap);}else dm+=svgMod(c+q,r+q,s,moduleShape,moduleGap);
+      }
+    }
+  }
   let fe='';fO.forEach(({r,c},i)=>{fe+=svgFinder(c+q,r+q,s,anchorOuterShape,anchorInnerShape,anchorBorder,anchorInnerSize);});
   const bgR=bgAlpha>0?`<rect width="${t}" height="${t}" fill="${fmtC(bgColor,bgAlpha)}"/>`:'';
   let lE='';
