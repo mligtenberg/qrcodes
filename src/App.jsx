@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { generateMatrix, getBestEC } from './qr.js';
-import { renderQR, getPngUrl, getSvgUrls } from './render.js';
+import { renderQR, getPngUrl, getSvgUrls, genSVG } from './render.js';
 import { TH } from './themes.js';
 import { Ic } from './icons.jsx';
 import { MS, AS, SP, FOP, FIP } from './shapes.jsx';
@@ -49,7 +49,6 @@ function App(){
   const[showCollection,setShowCollection]=useState(false);
   const collectionRef=useRef(null);
   const logoRef=useRef(null);
-  const canvasRef=useRef(null);
   const rootRef=useRef(null);
   useEffect(()=>{
     if(!showCollection)return;
@@ -85,11 +84,11 @@ function App(){
   useEffect(()=>gen(),[gen]);
 
   const opts={fgColor:fgC,fgAlpha:fgA,bgColor:bgC,bgAlpha:bgA,scale,moduleShape:mShape,moduleGap:mGap,anchorOuterShape:aOuter,anchorInnerShape:aInner,anchorInnerSize:aInnerSize,anchorBorder:aBorder,logoImg,logoDataUrl:logoDU,logoSvgContent:logoSvgContent,logoShape:logoSh,logoRatio:logoR,logoBg};
-  useEffect(()=>{if(!qrData||!canvasRef.current)return;renderQR(canvasRef.current,qrData,opts);},[qrData,fgC,fgA,bgC,bgA,scale,mShape,mGap,aOuter,aInner,aInnerSize,aBorder,logoImg,logoSh,logoR,logoBg]);
+  const previewUrl=useMemo(()=>qrData?'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(genSVG(qrData,opts)):null,[qrData,fgC,fgA,bgC,bgA,mShape,mGap,aOuter,aInner,aInnerSize,aBorder,logoImg,logoDU,logoSvgContent,logoSh,logoR,logoBg]);
 
   const dlPng=()=>{if(!qrData)return;setModal({type:'png',dataUrl:getPngUrl(qrData,opts)});};
   const dlSvg=()=>{if(!qrData)return;const{previewUrl,downloadUrl}=getSvgUrls(qrData,opts);setModal({type:'svg',dataUrl:previewUrl,downloadUrl,onCloseExtra:()=>URL.revokeObjectURL(downloadUrl)});};
-  const copyImg=()=>{if(!canvasRef.current||!qrData)return;const o=document.createElement('canvas');renderQR(o,qrData,opts);o.toBlob(b=>{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);}).catch(()=>alert('Copy not supported.'));},'image/png');};
+  const copyImg=()=>{if(!qrData)return;const o=document.createElement('canvas');renderQR(o,qrData,opts);o.toBlob(b=>{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);}).catch(()=>alert('Copy not supported.'));},'image/png');};
 
   const upLogo=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const du=ev.target.result;const img=new Image();img.onload=()=>{setLogoImg(img);setLogoDU(du);const lm=minEc(logoR);const e2=ECR[ec]<ECR[lm]?lm:ec;try{setQrData(generateMatrix(input.trim(),e2));}catch{}};img.src=du;if(f.type==='image/svg+xml'){const reader=new FileReader();reader.onload=se=>{try{const parser=new DOMParser();const doc=parser.parseFromString(se.target.result,'image/svg+xml');const svgEl=doc.querySelector('svg');if(svgEl){const viewBox=svgEl.getAttribute('viewBox');let vb={x:0,y:0,w:0,h:0};if(viewBox){const p=viewBox.split(/[\s,]+/).map(Number);vb={x:p[0]||0,y:p[1]||0,w:p[2]||0,h:p[3]||0};}else{const w=parseFloat(svgEl.getAttribute('width'))||0,h=parseFloat(svgEl.getAttribute('height'))||0;vb={x:0,y:0,w,h};}const inner=Array.from(svgEl.childNodes).filter(n=>n.nodeType===1).map(n=>n.outerHTML).join('');setLogoSvgContent({inner,vb});}}catch{setLogoSvgContent(null);}};reader.readAsText(f);}else{setLogoSvgContent(null);}};r.readAsDataURL(f);e.target.value='';};
   const rmLogo=()=>{setLogoImg(null);setLogoDU(null);setLogoSvgContent(null);try{setQrData(generateMatrix(input.trim(),ec));}catch{}};
@@ -310,7 +309,7 @@ function App(){
         {/* Preview */}
         <div className="pv" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px 24px',gap:20,background:'var(--bg)'}}>
           <div style={{backgroundImage:chkBg,borderRadius:16,overflow:'hidden',border:`1px solid var(--brd)`,display:'flex',alignItems:'center',justifyContent:'center',minWidth:260,minHeight:260,padding:20}}>
-            {qrData?<canvas ref={canvasRef} style={{imageRendering:'pixelated',maxWidth:380,maxHeight:380,display:'block',borderRadius:2}}/>:<div style={{textAlign:'center',color:'var(--txtD)',padding:'32px 24px'}}><div style={{marginBottom:10,opacity:.2,transform:'scale(2)',display:'inline-block'}}><Ic.QR/></div><div style={{fontSize:13,marginTop:8}}>Start typing to generate</div></div>}
+            {qrData?<img src={previewUrl} alt="QR code preview" style={{width:Math.min(totalPx,380),height:Math.min(totalPx,380),display:'block',borderRadius:2}}/>:<div style={{textAlign:'center',color:'var(--txtD)',padding:'32px 24px'}}><div style={{marginBottom:10,opacity:.2,transform:'scale(2)',display:'inline-block'}}><Ic.QR/></div><div style={{fontSize:13,marginTop:8}}>Start typing to generate</div></div>}
           </div>
           {qrData&&<div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'center'}}>{[['Version',`V${Math.round((qrData.size-17)/4)}`],['Modules',`${qrData.size}×${qrData.size}`],['EC',effEc],['Image',`${totalPx}×${totalPx}px`]].map(([k,v])=><div key={k} style={{background:'var(--surf)',border:`1px solid var(--brd)`,borderRadius:20,padding:'3px 10px',display:'flex',gap:5,alignItems:'center'}}><span style={{fontSize:10,color:'var(--txtD)',fontWeight:600}}>{k}</span><span style={{fontSize:10.5,color:'var(--txtM)',fontFamily:'monospace'}}>{v}</span></div>)}</div>}
           <div className="xbtn" style={{display:'flex',gap:8}}>
