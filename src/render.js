@@ -146,6 +146,43 @@ export function svgModC(x,y,s,shape,n,gapPct){
   }
   return svgMod(x,y,s,shape);
 }
+// Traces the outlines of 4-connected dark regions into a single path: convex corners rounded, concave corners sharp.
+export function svgFluidPath(matrix,size,fS,q,r){
+  const dk=(rr,cc)=>rr>=0&&rr<size&&cc>=0&&cc<size&&!fS.has(`${rr},${cc}`)&&matrix[rr][cc].dark===1;
+  // Directed boundary edges with the filled side on the right (clockwise in screen space).
+  const out=new Map(),key=(x,y)=>`${x},${y}`;
+  const add=(x1,y1,x2,y2)=>{const k=key(x1,y1);if(!out.has(k))out.set(k,[]);out.get(k).push({x1,y1,x2,y2,dx:x2-x1,dy:y2-y1,used:false});};
+  for(let rr=0;rr<size;rr++)for(let cc=0;cc<size;cc++){
+    if(!dk(rr,cc))continue;
+    if(!dk(rr-1,cc))add(cc,rr,cc+1,rr);
+    if(!dk(rr,cc+1))add(cc+1,rr,cc+1,rr+1);
+    if(!dk(rr+1,cc))add(cc+1,rr+1,cc,rr+1);
+    if(!dk(rr,cc-1))add(cc,rr+1,cc,rr);
+  }
+  let d='';
+  for(const list of out.values())for(const start of list){
+    if(start.used)continue;
+    const loop=[];let e=start;
+    while(e&&!e.used){
+      e.used=true;loop.push(e);
+      const cands=(out.get(key(e.x2,e.y2))||[]).filter(n=>!n.used);
+      // At diagonal touch points prefer the right turn, keeping diagonal-only cells separate.
+      e=cands.find(n=>n.dx===-e.dy&&n.dy===e.dx)||cands.find(n=>n.dx===e.dx&&n.dy===e.dy)||cands[0];
+    }
+    const cs=[];
+    for(let i=0;i<loop.length;i++){
+      const a=loop[i],b=loop[(i+1)%loop.length];
+      if(a.dx===b.dx&&a.dy===b.dy)continue;
+      const convex=b.dx===-a.dy&&b.dy===a.dx,px=a.x2+q,py=a.y2+q;
+      cs.push(convex&&r>0?{ex:px-a.dx*r,ey:py-a.dy*r,xx:px+b.dx*r,xy:py+b.dy*r,arc:true}:{ex:px,ey:py,xx:px,xy:py});
+    }
+    if(!cs.length)continue;
+    d+=`M${cs[0].xx},${cs[0].xy}`;
+    for(let i=1;i<=cs.length;i++){const c=cs[i%cs.length];d+=`L${c.ex},${c.ey}`;if(c.arc)d+=`A${r},${r} 0 0,1 ${c.xx},${c.xy}`;}
+    d+='Z';
+  }
+  return d;
+}
 export function svgFinder(ox,oy,s,oS,iS,border,innerSize){
   const full=7*s,bt=border||1,is=innerSize||1,hs=full-2*bt*s,hx=ox+bt*s,hy=oy+bt*s;
   const iw=3*s*is,iox=ox+(7*s-iw)/2,ioy=oy+(7*s-iw)/2;
@@ -176,7 +213,10 @@ export function genSVG({matrix,size},opts){
     maskDef=`<mask id="qm"><rect width="${t}" height="${t}" fill="white"/>${cutout}</mask>`;
   }
   let dm='';
-  if(moduleShape==='square'){
+  if(moduleShape==='fluid'||(moduleShape==='square'&&!moduleGap)){
+    const d=svgFluidPath(matrix,size,fS,q,moduleShape==='fluid'?s*0.38:0);
+    if(d)dm=`<path d="${d}"/>`;
+  }else if(moduleShape==='square'){
     const gp=moduleGap||0;
     const gap=s*(gp/100);
     const wg=s-gap*2;
@@ -197,13 +237,15 @@ export function genSVG({matrix,size},opts){
         if(CON.has(moduleShape)){const n=gNbr(matrix,size,fS,r,c);dm+=svgModC(c+q,r+q,s,moduleShape,n,moduleGap);}else dm+=svgMod(c+q,r+q,s,moduleShape,moduleGap);
       }
     }
+    // Merge touching connected modules into one path so anti-aliasing leaves no seams between them.
+    if(CON.has(moduleShape))dm=`<path d="${[...dm.matchAll(/d="([^"]*)"/g)].map(m=>m[1]).join('')}"/>`;
   }
   let fe='';fO.forEach(({r,c},i)=>{fe+=svgFinder(c+q,r+q,s,anchorOuterShape,anchorInnerShape,anchorBorder,anchorInnerSize);});
   const bgR=bgAlpha>0?`<rect width="${t}" height="${t}" fill="${fmtC(bgColor,bgAlpha)}"/>`:'';
   let lE='';
   if(opts.logoImg&&opts.logoDataUrl){const ls2=t*(opts.logoRatio||0.22),lx=(t-ls2)/2,ly=(t-ls2)/2,pad=ls2*0.12,bg=opts.logoBg||'#ffffff';let bgEl='',clipEl='',logoEl='';if(opts.logoShape==='circle'){bgEl=`<circle cx="${lx+ls2/2}" cy="${ly+ls2/2}" r="${ls2/2+pad}" fill="${bg}"/>`;clipEl=`<clipPath id="lc"><circle cx="${lx+ls2/2}" cy="${ly+ls2/2}" r="${ls2/2}"/></clipPath>`;}else if(opts.logoShape==='rounded'){const rp=(ls2+pad*2)*0.2,ri=ls2*0.18;bgEl=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls2+pad*2}" height="${ls2+pad*2}" rx="${rp}" fill="${bg}"/>`;clipEl=`<clipPath id="lc"><rect x="${lx}" y="${ly}" width="${ls2}" height="${ls2}" rx="${ri}"/></clipPath>`;}else{bgEl=`<rect x="${lx-pad}" y="${ly-pad}" width="${ls2+pad*2}" height="${ls2+pad*2}" fill="${bg}"/>`;}if(opts.logoSvgContent){const{inner,vb}=opts.logoSvgContent;const vw=vb.w||1,vh=vb.h||1;const sc=ls2/Math.max(vw,vh);const ox=lx+(ls2-vw*sc)/2-vb.x*sc,oy=ly+(ls2-vh*sc)/2-vb.y*sc;logoEl=`<g clip-path="url(#lc)" transform="translate(${ox},${oy}) scale(${sc})">${inner}</g>`;}else{logoEl=`<image href="${opts.logoDataUrl}" x="${lx}" y="${ly}" width="${ls2}" height="${ls2}"${clipEl?' clip-path="url(#lc)"':''} preserveAspectRatio="xMidYMid slice"/>`;}lE=bgEl+clipEl+logoEl;}
   const mAttr=logoTransparent?' mask="url(#qm)"':'';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${t} ${t}" shape-rendering="crispEdges">${maskDef}${bgR}<g fill="${fg}"${mAttr}>${dm}${fe}</g>${lE}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${t} ${t}">${maskDef}${bgR}<g fill="${fg}"${mAttr}>${dm}${fe}</g>${lE}</svg>`;
 }
 
 export function getPngUrl(qrData,opts){const c=document.createElement('canvas');renderQR(c,qrData,{...opts,scale:opts.scale*2});return c.toDataURL('image/png');}
