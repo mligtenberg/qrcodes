@@ -36,3 +36,25 @@ export function DlModal({type,dataUrl,downloadUrl,onClose,onCloseExtra}){
   useEffect(()=>{try{const a=document.createElement('a');a.href=downloadUrl||dataUrl;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);}catch{}},[]);
   return<div onClick={close} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:24}}><div onClick={e=>e.stopPropagation()} style={{background:'var(--surf)',border:'1px solid var(--brd2)',borderRadius:16,padding:24,maxWidth:420,width:'100%',display:'flex',flexDirection:'column',gap:16}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontWeight:600,fontSize:15,color:'var(--txt)'}}>Save {fn}</span><button onClick={close} style={{background:'none',border:'none',color:'var(--txtM)',cursor:'pointer',fontSize:20,lineHeight:1,padding:'0 4px'}}>×</button></div><div style={{background:'var(--surf2)',borderRadius:10,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',padding:12,minHeight:120}}><img src={dataUrl} alt="QR" style={{maxWidth:'100%',maxHeight:280,display:'block',imageRendering:isPng?'pixelated':'auto'}}/></div><div style={{background:'var(--surf2)',borderRadius:8,padding:'10px 14px'}}><p style={{margin:'0 0 6px',fontSize:12,color:'var(--txtM)',fontWeight:600}}>How to save:</p><p style={{margin:0,fontSize:12,color:'var(--txtF)',lineHeight:1.6}}><strong style={{color:'var(--txtM)'}}>Desktop:</strong> Right-click the image → "Save image as…"<br/><strong style={{color:'var(--txtM)'}}>Mobile:</strong> Long-press the image → "Save to Photos"</p></div><a href={downloadUrl||dataUrl} download={fn} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:'10px 0',background:'var(--acc)',color:'white',borderRadius:8,fontSize:13,fontWeight:600,textDecoration:'none'}}>↓ Try direct download</a></div></div>;
 }
+
+/** Shows the exact string that is encoded in the QR code. */
+export function EncodedText({ text }) {
+  const style = {
+    maxWidth: 380,
+    maxHeight: 96,
+    overflowY: 'auto',
+    padding: '6px 12px',
+    background: 'var(--surf)',
+    border: '1px solid var(--brd)',
+    borderRadius: 8,
+    color: 'var(--txtM)',
+    fontSize: 11.5,
+    fontFamily: 'monospace',
+    textAlign: 'center',
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'anywhere',
+    userSelect: 'all',
+  };
+
+  return <div style={style} title="Encoded in the QR code">{text}</div>;
+}
