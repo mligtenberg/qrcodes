@@ -13,10 +13,10 @@ export function Sel({value,onChange,children}){return <select value={value} onCh
 const ta=s=>({...fs(),resize:'vertical',lineHeight:1.5});
 
 function UrlForm({ value, onChange }) {
-  const { scheme, rest } = splitUrl(value);
-  const otherScheme = scheme === 'https' ? 'http' : 'https';
+  const { scheme, address } = splitUrl(value);
+  const oppositeScheme = scheme === 'https' ? 'http' : 'https';
 
-  const wrapStyle = {
+  const inputGroupStyle = {
     display: 'flex',
     alignItems: 'center',
     background: 'var(--inp)',
@@ -24,7 +24,7 @@ function UrlForm({ value, onChange }) {
     borderRadius: 8,
     overflow: 'hidden',
   };
-  const schemeStyle = {
+  const schemeButtonStyle = {
     padding: '8px 10px',
     background: 'var(--surf2)',
     color: 'var(--txtD)',
@@ -42,17 +42,17 @@ function UrlForm({ value, onChange }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <Fld label="URL" icon={Ic.Glo}>
         <div
-          style={wrapStyle}
-          onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--acc)')}
-          onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--brd)')}
+          style={inputGroupStyle}
+          onFocusCapture={event => (event.currentTarget.style.borderColor = 'var(--acc)')}
+          onBlurCapture={event => (event.currentTarget.style.borderColor = 'var(--brd)')}
         >
-          <button onClick={() => onChange(`${otherScheme}://${rest}`)} style={schemeStyle}>
+          <button onClick={() => onChange(`${oppositeScheme}://${address}`)} style={schemeButtonStyle}>
             {scheme}://
           </button>
           <input
             type="text"
-            value={rest}
-            onChange={e => onChange(buildUrl(e.target.value, scheme))}
+            value={address}
+            onChange={event => onChange(buildUrl(event.target.value, scheme))}
             placeholder="www.example.com"
             style={{ ...fs(), border: 'none', borderRadius: 0, flex: 1, minWidth: 0 }}
           />
