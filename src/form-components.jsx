@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Ic } from './icons.jsx';
+import { splitUrl, buildUrl } from './url-utils.js';
 
 const fs=()=>({width:'100%',background:'var(--inp)',color:'var(--txt)',border:'1.5px solid var(--brd)',borderRadius:8,padding:'8px 11px',fontSize:12.5,outline:'none',transition:'border-color .15s',fontFamily:'inherit'});
 
@@ -12,15 +13,8 @@ export function Sel({value,onChange,children}){return <select value={value} onCh
 const ta=s=>({...fs(),resize:'vertical',lineHeight:1.5});
 
 function UrlForm({ value, onChange }) {
-  const raw = value.replace(/^https?:\/\//i, '');
-  const isH = !/^http:\/\//i.test(value);
-
-  // A pasted scheme replaces the toggle's scheme instead of being duplicated.
-  const setRaw = v => {
-    const t = v.trim();
-    const m = t.match(/^(https?):\/\//i);
-    onChange(m ? m[1].toLowerCase() + '://' + t.slice(m[0].length) : (isH ? 'https://' : 'http://') + v);
-  };
+  const { scheme, rest } = splitUrl(value);
+  const otherScheme = scheme === 'https' ? 'http' : 'https';
 
   const wrapStyle = {
     display: 'flex',
@@ -52,13 +46,13 @@ function UrlForm({ value, onChange }) {
           onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--acc)')}
           onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--brd)')}
         >
-          <button onClick={() => onChange((isH ? 'http://' : 'https://') + raw)} style={schemeStyle}>
-            {isH ? 'https://' : 'http://'}
+          <button onClick={() => onChange(`${otherScheme}://${rest}`)} style={schemeStyle}>
+            {scheme}://
           </button>
           <input
             type="text"
-            value={raw}
-            onChange={e => setRaw(e.target.value)}
+            value={rest}
+            onChange={e => onChange(buildUrl(e.target.value, scheme))}
             placeholder="www.example.com"
             style={{ ...fs(), border: 'none', borderRadius: 0, flex: 1, minWidth: 0 }}
           />
