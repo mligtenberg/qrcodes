@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Ic } from './icons.jsx';
+import { splitUrl, buildUrl } from './url-utils.js';
 
 const fs=()=>({width:'100%',background:'var(--inp)',color:'var(--txt)',border:'1.5px solid var(--brd)',borderRadius:8,padding:'8px 11px',fontSize:12.5,outline:'none',transition:'border-color .15s',fontFamily:'inherit'});
 
@@ -11,7 +12,55 @@ export function Sel({value,onChange,children}){return <select value={value} onCh
 
 const ta=s=>({...fs(),resize:'vertical',lineHeight:1.5});
 
-function UrlForm({value,onChange}){const raw=value.replace(/^https?:\/\//,'');const isH=!value.startsWith('http://');return<div style={{display:'flex',flexDirection:'column',gap:10}}><Fld label="URL" icon={Ic.Glo}><div style={{display:'flex',alignItems:'center',background:'var(--inp)',border:'1.5px solid var(--brd)',borderRadius:8,overflow:'hidden'}} onFocusCapture={e=>e.currentTarget.style.borderColor='var(--acc)'} onBlurCapture={e=>e.currentTarget.style.borderColor='var(--brd)'}><button onClick={()=>onChange((isH?'http://':'https://')+raw)} style={{padding:'8px 10px',background:'var(--surf2)',color:'var(--txtD)',fontSize:11.5,fontFamily:'monospace',border:'none',borderRight:'1.5px solid var(--brd)',cursor:'pointer',flexShrink:0,whiteSpace:'nowrap',outline:'none'}}>{isH?'https://':'http://'}</button><input type="text" value={raw} onChange={e=>onChange((isH?'https://':'http://')+e.target.value)} onBlur={e=>{const v=e.target.value;if(v&&!v.startsWith('http'))onChange('https://'+v);}} placeholder="www.example.com" style={{...fs(),border:'none',borderRadius:0,flex:1,minWidth:0}}/></div></Fld></div>;}
+function UrlForm({ value, onChange }) {
+  const { scheme, address } = splitUrl(value);
+  const oppositeScheme = scheme === 'https' ? 'http' : 'https';
+
+  const inputGroupStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    background: 'var(--inp)',
+    border: '1.5px solid var(--brd)',
+    borderRadius: 8,
+    overflow: 'hidden',
+  };
+  const schemeButtonStyle = {
+    padding: '8px 10px',
+    background: 'var(--surf2)',
+    color: 'var(--txtD)',
+    fontSize: 11.5,
+    fontFamily: 'monospace',
+    border: 'none',
+    borderRight: '1.5px solid var(--brd)',
+    cursor: 'pointer',
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    outline: 'none',
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Fld label="URL" icon={Ic.Glo}>
+        <div
+          style={inputGroupStyle}
+          onFocusCapture={event => (event.currentTarget.style.borderColor = 'var(--acc)')}
+          onBlurCapture={event => (event.currentTarget.style.borderColor = 'var(--brd)')}
+        >
+          <button onClick={() => onChange(`${oppositeScheme}://${address}`)} style={schemeButtonStyle}>
+            {scheme}://
+          </button>
+          <input
+            type="text"
+            value={address}
+            onChange={event => onChange(buildUrl(event.target.value, scheme))}
+            placeholder="www.example.com"
+            style={{ ...fs(), border: 'none', borderRadius: 0, flex: 1, minWidth: 0 }}
+          />
+        </div>
+      </Fld>
+    </div>
+  );
+}
 
 function EmailForm({value,onChange}){const parse=v=>{const m=v.match(/^mailto:([^?]*)(\?(.*))?$/);if(!m)return{addr:'',sub:'',body:''};const p=new URLSearchParams(m[3]||'');return{addr:m[1],sub:p.get('subject')||'',body:p.get('body')||''};};const build=(a,s,b)=>{const p=new URLSearchParams();if(s)p.set('subject',s);if(b)p.set('body',b);const q=p.toString();return'mailto:'+a+(q?'?'+q:'');};const{addr,sub,body}=parse(value);return<div style={{display:'flex',flexDirection:'column',gap:10}}><Fld label="Email address" icon={Ic.At}><TI prefix="mailto:" value={addr} onChange={e=>onChange(build(e.target.value,sub,body))} placeholder="name@example.com" type="email"/></Fld><Fld label="Subject" hint="Optional"><TI value={sub} onChange={e=>onChange(build(addr,e.target.value,body))} placeholder="Hello there"/></Fld><Fld label="Body" hint="Optional"><textarea value={body} onChange={e=>onChange(build(addr,sub,e.target.value))} rows={3} style={ta()} onFocus={e=>e.target.style.borderColor='var(--acc)'} onBlur={e=>e.target.style.borderColor='var(--brd)'} placeholder="Your message..."/></Fld></div>;}
 

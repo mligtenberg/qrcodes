@@ -6,7 +6,7 @@ import { Ic } from './icons.jsx';
 import { MS, AS, SP, FOP, FIP } from './shapes.jsx';
 import { PT, TD } from './content-types.js';
 import { Fld, TI, Sel, CForm } from './form-components.jsx';
-import { SecHdr, ShPick, ClrRow, DlModal } from './ui-components.jsx';
+import { SecHdr, ShPick, ClrRow, DlModal, EncodedText } from './ui-components.jsx';
 import { loadCollection, addSavedQR, removeSavedQR } from './storage.js';
 
 function App(){
@@ -311,6 +311,7 @@ function App(){
           <div style={{backgroundImage:chkBg,borderRadius:16,overflow:'hidden',border:`1px solid var(--brd)`,display:'flex',alignItems:'center',justifyContent:'center',minWidth:260,minHeight:260,padding:20}}>
             {qrData?<img src={previewUrl} alt="QR code preview" style={{width:Math.min(totalPx,380),height:Math.min(totalPx,380),display:'block',borderRadius:2}}/>:<div style={{textAlign:'center',color:'var(--txtD)',padding:'32px 24px'}}><div style={{marginBottom:10,opacity:.2,transform:'scale(2)',display:'inline-block'}}><Ic.QR/></div><div style={{fontSize:13,marginTop:8}}>Start typing to generate</div></div>}
           </div>
+          {qrData&&<EncodedText text={input.trim()}/>}
           {qrData&&<div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'center'}}>{[['Version',`V${Math.round((qrData.size-17)/4)}`],['Modules',`${qrData.size}×${qrData.size}`],['EC',effEc],['Image',`${totalPx}×${totalPx}px`]].map(([k,v])=><div key={k} style={{background:'var(--surf)',border:`1px solid var(--brd)`,borderRadius:20,padding:'3px 10px',display:'flex',gap:5,alignItems:'center'}}><span style={{fontSize:10,color:'var(--txtD)',fontWeight:600}}>{k}</span><span style={{fontSize:10.5,color:'var(--txtM)',fontFamily:'monospace'}}>{v}</span></div>)}</div>}
           <div className="xbtn" style={{display:'flex',gap:8}}>
             <button className="eb" onClick={dlPng} disabled={!qrData} style={{display:'flex',alignItems:'center',gap:7,padding:'9px 20px',fontSize:12.5,fontWeight:600,background:qrData?'var(--acc)':'var(--surf2)',color:qrData?'white':'var(--txtD)',border:'none',borderRadius:8,cursor:qrData?'pointer':'default'}}><Ic.Dl/> PNG</button>
